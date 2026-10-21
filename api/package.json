@@ -1,0 +1,11 @@
+{
+  "name": "halloween-with-friends-api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/functions/*.js",
+  "dependencies": {
+    "@azure/data-tables": "13.3.0",
+    "@azure/functions": "4.5.1",
+    "@azure/storage-blob": "12.25.0"
+  }
+}
