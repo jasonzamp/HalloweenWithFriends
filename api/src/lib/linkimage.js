@@ -71,6 +71,18 @@ function findImages(html, base) {
   for (const k of [...want, "itemprop"]) if (found[k]) out.push(found[k]);
   const link = head.match(/<link\b[^>]*rel\s*=\s*["']image_src["'][^>]*>/i);
   if (link) { const h = (link[0].match(/\bhref\s*=\s*["']([^"']+)["']/i) || [])[1]; if (h) out.push(decode(h)); }
+  // No preview picture declared: fall back to the first real photo on the page (skipping logos, icons and tracking pixels).
+  if (!out.length) {
+    for (const tag of (html.match(/<img\b[^>]*>/gi) || []).slice(0, 60)) {
+      const src = (tag.match(/\b(?:data-src|src)\s*=\s*["']([^"']+)["']/i) || [])[1];
+      if (!src || src.startsWith("data:") || !/\.(jpe?g|png|webp|avif)(\?|$)/i.test(src)) continue;
+      if (/logo|icon|sprite|avatar|pixel|badge|flag|payment|1x1/i.test(src + " " + tag)) continue;
+      const w = Number((tag.match(/\bwidth\s*=\s*["']?(\d+)/i) || [])[1] || 0);
+      if (w && w < 300) continue;
+      out.push(decode(src));
+      if (out.length >= 3) break;
+    }
+  }
   const seen = new Set();
   return out.map(x => { try { return new URL(x, base).href; } catch { return null; } })
     .filter(x => x && /^https?:/.test(x) && !seen.has(x) && seen.add(x));
