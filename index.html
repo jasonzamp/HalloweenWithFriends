@@ -114,17 +114,22 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(46px,13vw,68px);li
 .who{font-size:14px;color:var(--muted);overflow-wrap:anywhere;min-width:0}
 .opts{display:grid;gap:8px}
 .opts-h{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.opt{position:relative;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 14px;min-height:52px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);cursor:pointer;overflow:hidden;text-align:left;width:100%;touch-action:manipulation}
-.opt .bar{position:absolute;inset:0 auto 0 0;background:rgba(242,137,43,.17);transition:width .3s ease}
-.opt>*:not(.bar){position:relative}
-.opt .dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--muted)}
-.opt.mine{border-color:var(--pumpkin)}
-.opt.mine .dot{border-color:var(--pumpkin);background:radial-gradient(circle,var(--pumpkin) 45%,transparent 50%)}
-.opt .lbl{min-width:0;overflow-wrap:anywhere;display:grid}
-.opt .lbl small{color:var(--candle);font-weight:600;font-variant-numeric:tabular-nums;font-size:13px}
-.opt .lbl em{font-style:normal;color:var(--muted);font-size:12px}
-.opt .n{font-variant-numeric:tabular-nums;font-weight:800;font-size:15px}
-.addopt{display:grid;grid-template-columns:1fr 92px auto;gap:8px}
+.orow{position:relative;display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2);overflow:hidden}
+.orow.mine{border:2px solid var(--pumpkin);padding:7px}
+.orow .bar{position:absolute;inset:0 auto 0 0;background:rgba(242,137,43,.17);transition:width .3s ease;pointer-events:none}
+.othumb{position:relative;flex:none;width:64px;height:64px;border-radius:10px;border:0;padding:0;overflow:hidden;background:var(--bg);cursor:zoom-in;display:block}
+.othumb img{width:100%;height:100%;object-fit:cover;display:block}
+.othumb.none{cursor:default;display:grid;place-items:center;opacity:.55}
+.opick{position:relative;flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;border:0;padding:4px 6px 4px 0;text-align:left;cursor:pointer;min-height:56px;touch-action:manipulation}
+.opick .lbl{flex:1;min-width:0;display:grid;overflow-wrap:anywhere}
+.opick .lbl b{font-weight:700;font-size:15px}
+.opick .lbl small{color:var(--candle);font-weight:600;font-variant-numeric:tabular-nums;font-size:13px}
+.opick .lbl em{font-style:normal;color:var(--muted);font-size:12px}
+.opick .n{font-variant-numeric:tabular-nums;font-weight:800;font-size:16px}
+.orow.mine .opick .lbl em::before{content:"Your pick · ";color:var(--candle);font-weight:600}
+.olink{position:relative;flex:none;width:40px;height:40px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);color:var(--candle);text-decoration:none;font-weight:700;background:var(--surface)}
+.addo{width:100%;border-style:dashed;color:var(--muted)}
+.orow .opick:focus-visible,.othumb:focus-visible,.olink:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
 .foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 .confirm{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .btn.danger{border-color:var(--danger);color:var(--danger);background:transparent}
@@ -154,7 +159,9 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
 .drop.over{border-color:var(--pumpkin);color:var(--fg)}
 .drop img{max-height:200px;border-radius:10px}
 .optrows{display:grid;gap:8px}
-.optrow{display:grid;grid-template-columns:1fr 84px 44px;gap:8px}
+.optrow{display:grid;grid-template-columns:1fr 84px 44px;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.optrow .orl{grid-column:1/-1}
+.hint2{font-size:13px;color:var(--muted);margin:0}
 .err{color:var(--danger);font-size:14px;margin:0}
 .actions{display:grid;grid-template-columns:1fr 2fr;gap:8px}
 
@@ -285,6 +292,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
         <img id="preview" alt="Preview of the chosen image" hidden>
       </div>
       <input type="file" id="f-img" accept="image/*" hidden>
+      <p class="hint2">Or paste the website link above and we'll grab its picture.</p>
     </div>
     <div class="optrows">
       <div class="opts-h">Options to vote on (optional)</div>
@@ -295,6 +303,40 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     <div class="actions">
       <button type="button" class="btn ghost" id="cancel">Cancel</button>
       <button type="submit" class="btn primary" id="save">Add to the vote</button>
+    </div>
+  </form>
+</div>
+
+<!-- option sheet -->
+<div class="sheet-bg" id="optBg" hidden>
+  <form class="sheet" id="optForm" novalidate>
+    <div class="grip"></div>
+    <h3>New option</h3>
+    <p class="hint" id="optFor"></p>
+    <div style="display:grid;gap:6px">
+      <label for="o-img">Photo</label>
+      <div class="drop" id="oDrop" tabindex="0" role="button" aria-label="Choose a photo">
+        <span id="oDropText">📸 Tap to add a photo</span>
+        <img id="oPreview" alt="Preview of the option's picture" hidden>
+      </div>
+      <input type="file" id="o-img" accept="image/*" hidden>
+      <p class="hint2">Or paste a link below and we'll grab its picture.</p>
+    </div>
+    <label for="o-label">Option name
+      <input id="o-label" maxlength="60" placeholder="e.g. Saturday 31st October" required>
+    </label>
+    <div class="two">
+      <label for="o-price">£ per person
+        <input id="o-price" maxlength="20" inputmode="decimal" placeholder="15 or Free">
+      </label>
+      <label for="o-url">Link (optional)
+        <input id="o-url" maxlength="500" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="menu, tickets…">
+      </label>
+    </div>
+    <p class="err" id="optErr" hidden></p>
+    <div class="actions">
+      <button type="button" class="btn ghost" id="optCancel">Cancel</button>
+      <button type="submit" class="btn primary" id="optSave">Add option</button>
     </div>
   </form>
 </div>
@@ -428,15 +470,15 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
             ${opts.map(([oid, o]) => {
               const n = t.cnt[oid] || 0, me = mv.picks?.[a.id] === oid, op = fmtPrice(o.price);
               const who = (t.who[oid] || []).map(nameOf).join(", ");
-              return `<button class="opt${me ? " mine" : ""}" type="button" data-act="pick" data-opt="${esc(oid)}" aria-pressed="${me}">
-                <span class="bar" style="width:${n ? (n / maxN) * 100 : 0}%"></span><span class="dot"></span>
-                <span class="lbl">${esc(o.label)}${op ? `<small>${esc(op)}${/^£/.test(op) ? " pp" : ""}</small>` : ""}${who ? `<em>${esc(who)}</em>` : ""}</span><span class="n">${n}</span></button>`;
+              const thumb = o.imageId
+                ? `<button class="othumb" type="button" data-act="oview" aria-label="View picture for ${esc(o.label)}"><img src="/api/images/${esc(o.imageId)}" alt="${esc(o.label)}" loading="lazy"></button>`
+                : `<span class="othumb none" aria-hidden="true"><svg viewBox="0 0 120 100" width="30" height="25"><use href="#pumpkin"/></svg></span>`;
+              return `<div class="orow${me ? " mine" : ""}"><span class="bar" style="width:${n ? (n / maxN) * 100 : 0}%"></span>${thumb}
+                <button class="opick" type="button" data-act="pick" data-opt="${esc(oid)}" aria-pressed="${me}">
+                  <span class="lbl"><b>${esc(o.label)}</b>${op ? `<small>${esc(op)}${/^£/.test(op) ? " pp" : ""}</small>` : ""}${who || me ? `<em>${esc(who)}</em>` : ""}</span><span class="n">${n}</span></button>
+                ${o.url ? `<a class="olink" href="${esc(o.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open link for ${esc(o.label)}">↗</a>` : ""}</div>`;
             }).join("")}
-            <form class="addopt" data-act="addopt">
-              <input id="ao-${esc(a.id)}" maxlength="60" placeholder="${opts.length ? "Another option" : "Add an option, e.g. Sat 8pm"}" aria-label="New option">
-              <input id="aop-${esc(a.id)}" maxlength="20" inputmode="decimal" placeholder="£" aria-label="Option price">
-              <button class="btn small" type="submit">Add</button>
-            </form>
+            <button class="btn small ghost addo" type="button" data-act="addopt">+ Add an option${opts.length ? "" : " (with a photo)"}</button>
           </div>
           <div class="foot"><span>Added by ${esc(a.createdBy === voterId ? "you" : (a.createdByName || "someone"))}</span>
             ${canDel ? (S.confirmDel === a.id
@@ -483,7 +525,8 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
   $("#list").addEventListener("click", e => {
     const b = e.target.closest("[data-act]"); if (!b || b.tagName === "FORM") return;
     const aid = b.closest(".card")?.dataset.id, act = b.dataset.act;
-    if (act === "view") { const img = b.querySelector("img"); $("#viewerImg").src = img.src; $("#viewerImg").alt = img.alt; $("#viewer").hidden = false; }
+    if (act === "view" || act === "oview") { const img = b.querySelector("img"); $("#viewerImg").src = img.src; $("#viewerImg").alt = img.alt; $("#viewer").hidden = false; }
+    else if (act === "addopt") needName(() => openOptSheet(aid));
     else if (act === "going") needName(() => toggleGoing(aid));
     else if (act === "pick") needName(() => pick(aid, b.dataset.opt));
     else if (act === "del") { S.confirmDel = aid; render(); }
@@ -493,39 +536,14 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
       api("activities/" + encodeURIComponent(aid), { method: "DELETE" }).then(() => toast("Removed")).catch(err => { toast(err.message); load(); });
     }
   });
-  $("#list").addEventListener("submit", e => {
-    const f = e.target.closest('form[data-act="addopt"]'); if (!f) return;
-    e.preventDefault();
-    const aid = f.closest(".card").dataset.id, [l, p] = f.querySelectorAll("input");
-    const label = l.value.trim(); if (!label) { l.focus(); return; }
-    needName(async () => {
-      const btn = f.querySelector("button"); btn.disabled = true;
-      try { await api(`activities/${encodeURIComponent(aid)}/options`, { method: "POST", body: { label, price: p.value.trim(), name: S.name } }); l.value = ""; p.value = ""; toast("Option added"); await load(); }
-      catch (err) { toast(err.message); }
-      finally { btn.disabled = false; }
-    });
-  });
   $("#viewer").addEventListener("click", () => { $("#viewer").hidden = true; $("#viewerImg").removeAttribute("src"); });
 
   // ---- sheets
+  const SHEETS = ["#sheetBg", "#nameBg", "#optBg"];
   function openSheet(sel) { $(sel).hidden = false; document.body.style.overflow = "hidden"; }
-  function closeSheet(sel) { $(sel).hidden = true; if ($("#sheetBg").hidden && $("#nameBg").hidden) document.body.style.overflow = ""; }
-  ["#sheetBg", "#nameBg"].forEach(sel => $(sel).addEventListener("click", e => { if (e.target === $(sel)) closeSheet(sel); }));
-  document.addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#viewer").hidden) $("#viewer").click(); else { closeSheet("#sheetBg"); closeSheet("#nameBg"); } });
-
-  function optRow() {
-    const id = Math.random().toString(36).slice(2, 8), row = document.createElement("div");
-    row.className = "optrow";
-    row.innerHTML = `<input id="or-${id}" maxlength="60" placeholder="e.g. Fri 30 Oct, 7pm" aria-label="Option"><input id="orp-${id}" maxlength="20" inputmode="decimal" placeholder="£" aria-label="Option price"><button type="button" class="btn small ghost" aria-label="Remove option">✕</button>`;
-    row.querySelector("button").onclick = () => row.remove();
-    $("#optRows").appendChild(row);
-  }
-  $("#addBtn").onclick = () => needName(() => {
-    $("#form").reset(); $("#optRows").innerHTML = ""; optRow(); setImage(null); $("#formErr").hidden = true;
-    openSheet("#sheetBg");
-  });
-  $("#cancel").onclick = () => closeSheet("#sheetBg");
-  $("#addRow").onclick = () => optRow();
+  function closeSheet(sel) { $(sel).hidden = true; if (SHEETS.every(x => $(x).hidden)) document.body.style.overflow = ""; }
+  SHEETS.forEach(sel => $(sel).addEventListener("click", e => { if (e.target === $(sel)) closeSheet(sel); }));
+  document.addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#viewer").hidden) $("#viewer").click(); else SHEETS.forEach(closeSheet); });
 
   // images: shrink on the phone before upload
   async function shrink(file) {
@@ -538,43 +556,110 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
       return b || file;
     } catch { return file; }
   }
-  async function setImage(file) {
-    const pv = $("#preview");
-    if (!file) { S.newImage = null; pv.hidden = true; pv.removeAttribute("src"); $("#dropText").textContent = "📸 Tap to add a screenshot"; return; }
-    if (!/^image\//.test(file.type)) { toast("That file isn't an image"); return; }
-    $("#dropText").textContent = "Preparing image…";
-    S.newImage = await shrink(file);
-    pv.src = URL.createObjectURL(S.newImage); pv.hidden = false;
-    $("#dropText").textContent = "Tap to change the image";
+  const looksUrl = v => /^\S+\.\S{2,}$/.test(v.trim());
+
+  // A photo slot: the person's own photo wins; otherwise a picture grabbed from the pasted link.
+  function picker({ drop, input, preview, text, emptyText, urlInput }) {
+    const p = { blob: null, autoId: "", autoFor: "", busy: null };
+    const show = (src, msg) => { preview.src = src; preview.hidden = false; text.textContent = msg; };
+    p.reset = () => { Object.assign(p, { blob: null, autoId: "", autoFor: "", busy: null }); preview.hidden = true; preview.removeAttribute("src"); text.textContent = emptyText; };
+    p.setFile = async file => {
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { toast("That file isn't an image"); return; }
+      text.textContent = "Preparing image…";
+      p.blob = await shrink(file); p.autoId = "";
+      show(URL.createObjectURL(p.blob), "Tap to change the photo");
+    };
+    p.fromLink = url => {
+      if (p.blob || !looksUrl(url) || url === p.autoFor) return;
+      p.autoFor = url; text.textContent = "Grabbing a picture from the link…";
+      const run = api("preview", { method: "POST", body: { url } }).then(r => {
+        if (p.autoFor !== url || p.blob) return;
+        p.autoId = r.id; show("/api/images/" + r.id, "Picture from the link · tap to use your own");
+      }).catch(e => {
+        if (p.autoFor !== url || p.blob) return;
+        p.autoFor = ""; if (!p.autoId) { preview.hidden = true; text.textContent = e.message; }
+      }).finally(() => { if (p.busy === run) p.busy = null; });
+      p.busy = run;
+    };
+    p.imageId = async () => {
+      if (p.busy) await p.busy;
+      if (p.blob) return (await api("images", { method: "POST", raw: p.blob, type: p.blob.type || "image/jpeg" })).id;
+      return p.autoId;
+    };
+    drop.onclick = () => input.click();
+    drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } };
+    input.onchange = e => { p.setFile(e.target.files[0]); input.value = ""; };
+    drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+    drop.ondragleave = () => drop.classList.remove("over");
+    drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); if (e.dataTransfer.files[0]) p.setFile(e.dataTransfer.files[0]); };
+    let t; urlInput.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => p.fromLink(urlInput.value.trim()), 700); });
+    urlInput.addEventListener("change", () => { clearTimeout(t); p.fromLink(urlInput.value.trim()); });
+    return p;
   }
-  const drop = $("#drop");
-  drop.onclick = () => $("#f-img").click();
-  drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#f-img").click(); } };
-  $("#f-img").onchange = e => setImage(e.target.files[0]);
-  drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
-  drop.ondragleave = () => drop.classList.remove("over");
-  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); if (e.dataTransfer.files[0]) setImage(e.dataTransfer.files[0]); };
+  const actPic = picker({ drop: $("#drop"), input: $("#f-img"), preview: $("#preview"), text: $("#dropText"), emptyText: "📸 Tap to add a screenshot", urlInput: $("#f-url") });
+  const optPic = picker({ drop: $("#oDrop"), input: $("#o-img"), preview: $("#oPreview"), text: $("#oDropText"), emptyText: "📸 Tap to add a photo", urlInput: $("#o-url") });
   document.addEventListener("paste", e => {
-    if ($("#sheetBg").hidden) return;
+    const target = !$("#optBg").hidden ? optPic : !$("#sheetBg").hidden ? actPic : null;
+    if (!target) return;
     const it = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
-    if (it) { e.preventDefault(); setImage(it.getAsFile()); }
+    if (it) { e.preventDefault(); target.setFile(it.getAsFile()); }
   });
+
+  // ---- new activity
+  function optRow() {
+    const id = Math.random().toString(36).slice(2, 8), row = document.createElement("div");
+    row.className = "optrow";
+    row.innerHTML = `<input id="or-${id}" maxlength="60" placeholder="e.g. Fri 30 Oct, 7pm" aria-label="Option"><input id="orp-${id}" maxlength="20" inputmode="decimal" placeholder="£" aria-label="Option price"><button type="button" class="btn small ghost" aria-label="Remove option">✕</button><input class="orl" id="orl-${id}" maxlength="500" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="Link for its picture (optional)" aria-label="Option link">`;
+    row.querySelector("button").onclick = () => row.remove();
+    $("#optRows").appendChild(row);
+  }
+  $("#addBtn").onclick = () => needName(() => {
+    $("#form").reset(); $("#optRows").innerHTML = ""; optRow(); actPic.reset(); $("#formErr").hidden = true;
+    openSheet("#sheetBg");
+  });
+  $("#cancel").onclick = () => closeSheet("#sheetBg");
+  $("#addRow").onclick = () => optRow();
+
+  async function grabId(url) { if (!looksUrl(url)) return ""; try { return (await api("preview", { method: "POST", body: { url } })).id; } catch { return ""; } }
 
   $("#form").addEventListener("submit", async e => {
     e.preventDefault();
     const err = $("#formErr"); err.hidden = true;
     const title = $("#f-title").value.trim();
     if (!title) { err.textContent = "Give the activity a name."; err.hidden = false; $("#f-title").focus(); return; }
-    const save = $("#save"); save.disabled = true; save.textContent = S.newImage ? "Uploading…" : "Adding…";
+    const save = $("#save"); save.disabled = true; save.textContent = "Adding…";
     try {
-      let imageId = "";
-      if (S.newImage) imageId = (await api("images", { method: "POST", raw: S.newImage, type: S.newImage.type || "image/jpeg" })).id;
-      const options = [...document.querySelectorAll("#optRows .optrow")].map(r => { const [l, p] = r.querySelectorAll("input"); return { label: l.value.trim(), price: p.value.trim() }; }).filter(o => o.label);
+      const rows = [...document.querySelectorAll("#optRows .optrow")].map(r => { const [l, p, u] = r.querySelectorAll("input"); return { label: l.value.trim(), price: p.value.trim(), url: u.value.trim() }; }).filter(o => o.label);
+      if (rows.some(o => o.url)) save.textContent = "Grabbing pictures…";
+      const [imageId, options] = await Promise.all([actPic.imageId(), Promise.all(rows.map(async o => ({ ...o, imageId: o.url ? await grabId(o.url) : "" })))]);
       await api("activities", { method: "POST", body: { title, price: $("#f-price").value.trim(), url: $("#f-url").value.trim(), desc: $("#f-desc").value.trim(), imageId, options, name: S.name } });
       closeSheet("#sheetBg"); toast("Added to the vote 🎃"); await load();
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     } catch (ex) { err.textContent = ex.message; err.hidden = false; }
     finally { save.disabled = false; save.textContent = "Add to the vote"; }
+  });
+
+  // ---- new option
+  function openOptSheet(aid) {
+    const a = S.acts.find(x => x.id === aid); if (!a) return;
+    S.optFor = aid; $("#optForm").reset(); optPic.reset(); $("#optErr").hidden = true;
+    $("#optFor").textContent = "For " + a.title;
+    openSheet("#optBg"); setTimeout(() => $("#o-label").focus(), 50);
+  }
+  $("#optCancel").onclick = () => closeSheet("#optBg");
+  $("#optForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const err = $("#optErr"); err.hidden = true;
+    const label = $("#o-label").value.trim();
+    if (!label) { err.textContent = "Give the option a name."; err.hidden = false; $("#o-label").focus(); return; }
+    const save = $("#optSave"); save.disabled = true; save.textContent = optPic.busy ? "Grabbing picture…" : "Adding…";
+    try {
+      const imageId = await optPic.imageId();
+      await api(`activities/${encodeURIComponent(S.optFor)}/options`, { method: "POST", body: { label, price: $("#o-price").value.trim(), url: $("#o-url").value.trim(), imageId, name: S.name } });
+      closeSheet("#optBg"); toast("Option added"); await load();
+    } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+    finally { save.disabled = false; save.textContent = "Add option"; }
   });
 
   render();

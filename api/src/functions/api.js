@@ -40,5 +40,8 @@ app.http("vote", { methods: ["PUT"], route: "vote", authLevel: "anonymous",
 app.http("uploadImage", { methods: ["POST"], route: "images", authLevel: "anonymous",
   handler: wrap(async req => h().uploadImage(headersOf(req), Buffer.from(await req.arrayBuffer()), req.headers.get("content-type"))) });
 
+app.http("preview", { methods: ["POST"], route: "preview", authLevel: "anonymous",
+  handler: wrap(async req => h().preview(headersOf(req), await jsonBody(req))) });
+
 app.http("getImage", { methods: ["GET"], route: "images/{id}", authLevel: "anonymous",
   handler: wrap(async req => h().getImage(req.params.id)) });

@@ -1,8 +1,10 @@
 // Request handlers, kept free of the Functions runtime so they can be tested directly.
 const crypto = require("crypto");
+const { grabLinkImage, PreviewError } = require("./linkimage");
 
 const LIMITS = { title: 80, price: 20, url: 500, desc: 600, optLabel: 60, name: 30, options: 12, imageBytes: 4 * 1024 * 1024 };
-const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
+const IMG_ID_RE = /^[0-9a-f-]{36}$/;
 const ID_RE = /^[A-Za-z0-9-]{6,64}$/;
 
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
@@ -23,18 +25,23 @@ function cleanUrl(u) {
   try { const x = new URL(u); if (!/^https?:$/.test(x.protocol)) throw 0; return x.href; }
   catch { throw bad("That link doesn't look like a web address."); }
 }
+const softUrl = u => { try { return cleanUrl(u); } catch { return ""; } };
+const imgId = v => { v = str(v, 64); return IMG_ID_RE.test(v) ? v : ""; };
+function optionOf(o, voterId, name, at) {
+  return { label: str(o?.label, LIMITS.optLabel), price: str(o?.price, LIMITS.price), imageId: imgId(o?.imageId), url: softUrl(o?.url), by: voterId, byName: name, at };
+}
 function cleanOptions(list, voterId, name) {
   const out = {};
   let at = Date.now();
   for (const o of (Array.isArray(list) ? list : []).slice(0, LIMITS.options)) {
-    const label = str(o?.label, LIMITS.optLabel);
-    if (label) out[newId()] = { label, price: str(o?.price, LIMITS.price), by: voterId, byName: name, at: at++ };
+    const opt = optionOf(o, voterId, name, at++);
+    if (opt.label) out[newId()] = opt;
   }
   return out;
 }
 const publicAct = ({ etag, ...a }) => a;
 
-function makeHandlers(store, { adminCode = "" } = {}) {
+function makeHandlers(store, { adminCode = "", grab = url => grabLinkImage(url) } = {}) {
   const isAdmin = headers => !!adminCode && headers["x-admin-code"] === adminCode;
 
   return {
@@ -68,7 +75,7 @@ function makeHandlers(store, { adminCode = "" } = {}) {
         if (!a) throw new HttpError(404, "That activity was removed.");
         if (Object.keys(a.options).length >= 30) throw bad("That activity already has plenty of options.");
         const oid = newId();
-        a.options[oid] = { label, price: str(body?.price, LIMITS.price), by: voterId, byName: str(body?.name, LIMITS.name), at: Date.now() };
+        a.options[oid] = optionOf({ ...body, label }, voterId, str(body?.name, LIMITS.name), Date.now());
         try { await store.replaceActivity(a, a.etag); return { status: 200, body: publicAct(a) }; }
         catch (e) { if (e.statusCode !== 412) throw e; }
       }
@@ -103,6 +110,18 @@ function makeHandlers(store, { adminCode = "" } = {}) {
       if (rawBody.length > LIMITS.imageBytes) throw bad("That image is too big. Try a smaller screenshot.");
       const id = crypto.randomUUID();
       await store.putImage(id, rawBody, type);
+      return { status: 201, body: { id } };
+    },
+
+    async preview(headers, body) {
+      voterIdOf(headers);
+      const url = cleanUrl(body?.url);
+      if (!url) throw bad("Paste a link first.");
+      let img;
+      try { img = await grab(url); }
+      catch (e) { if (e instanceof PreviewError) throw new HttpError(422, e.message); throw new HttpError(422, "Couldn't grab a picture from that link. Add one yourself instead."); }
+      const id = crypto.randomUUID();
+      await store.putImage(id, img.buffer, img.contentType);
       return { status: 201, body: { id } };
     },
 
