@@ -31,6 +31,7 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+.testbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:7px 16px;background:#3fd0b0;color:#06221c;font-size:13px;text-align:center;font-weight:500}
 html{-webkit-text-size-adjust:100%;background:var(--bg)}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
@@ -366,11 +367,19 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
   if (adminParam) { store.set("hw.admin", adminParam); history.replaceState(null, "", location.pathname); }
   const adminCode = store.get("hw.admin");
 
+  const IS_TEST = location.hostname !== "ambitious-sky-0d6e5820f.3.azurestaticapps.net";
+  if (IS_TEST) {
+    document.title = "TEST · " + document.title;
+    const t = document.createElement("div"); t.className = "testbar";
+    t.innerHTML = "<b>TEST COPY</b> · try anything here, the real page isn't affected";
+    document.body.prepend(t);
+  }
   const S = { acts: [], votes: {}, name: store.get("hw.name"), loaded: false, failed: false, newImage: null, confirmDel: null, pending: null };
 
   // ---- API
   async function api(path, { method = "GET", body, raw, type } = {}) {
     const headers = { "x-voter-id": voterId };
+    if (IS_TEST) headers["x-data-env"] = "test";
     if (adminCode) headers["x-admin-code"] = adminCode;
     if (body !== undefined) headers["content-type"] = "application/json";
     if (raw) headers["content-type"] = type;

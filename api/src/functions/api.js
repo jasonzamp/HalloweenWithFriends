@@ -2,8 +2,14 @@ const { app } = require("@azure/functions");
 const { makeStore } = require("../lib/store");
 const { makeHandlers } = require("../lib/handlers");
 
-let handlers = null;
-const h = () => (handlers ||= makeHandlers(makeStore(process.env.STORAGE_CONNECTION_STRING), { adminCode: process.env.ADMIN_CODE || "" }));
+// The test copy keeps its own activities and votes, so trying things out never touches the live page.
+// It's chosen by DATA_PREFIX on the server, or by the test site sending "x-data-env: test".
+const sets = {};
+function h(req) {
+  const fixed = (process.env.DATA_PREFIX || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const prefix = fixed || (req?.headers?.get("x-data-env") === "test" ? "test" : "");
+  return (sets[prefix] ||= makeHandlers(makeStore(process.env.STORAGE_CONNECTION_STRING, { prefix }), { adminCode: process.env.ADMIN_CODE || "" }));
+}
 
 const headersOf = req => Object.fromEntries([...req.headers.entries()].map(([k, v]) => [k.toLowerCase(), v]));
 async function jsonBody(req) { try { return await req.json(); } catch { return {}; } }
@@ -23,25 +29,25 @@ function wrap(fn) {
   };
 }
 
-app.http("state", { methods: ["GET"], route: "state", authLevel: "anonymous", handler: wrap(() => h().state()) });
+app.http("state", { methods: ["GET"], route: "state", authLevel: "anonymous", handler: wrap(req => h(req).state()) });
 
 app.http("createActivity", { methods: ["POST"], route: "activities", authLevel: "anonymous",
-  handler: wrap(async req => h().createActivity(headersOf(req), await jsonBody(req))) });
+  handler: wrap(async req => h(req).createActivity(headersOf(req), await jsonBody(req))) });
 
 app.http("addOption", { methods: ["POST"], route: "activities/{id}/options", authLevel: "anonymous",
-  handler: wrap(async req => h().addOption(headersOf(req), req.params.id, await jsonBody(req))) });
+  handler: wrap(async req => h(req).addOption(headersOf(req), req.params.id, await jsonBody(req))) });
 
 app.http("deleteActivity", { methods: ["DELETE"], route: "activities/{id}", authLevel: "anonymous",
-  handler: wrap(async req => h().deleteActivity(headersOf(req), req.params.id)) });
+  handler: wrap(async req => h(req).deleteActivity(headersOf(req), req.params.id)) });
 
 app.http("vote", { methods: ["PUT"], route: "vote", authLevel: "anonymous",
-  handler: wrap(async req => h().vote(headersOf(req), await jsonBody(req))) });
+  handler: wrap(async req => h(req).vote(headersOf(req), await jsonBody(req))) });
 
 app.http("uploadImage", { methods: ["POST"], route: "images", authLevel: "anonymous",
-  handler: wrap(async req => h().uploadImage(headersOf(req), Buffer.from(await req.arrayBuffer()), req.headers.get("content-type"))) });
+  handler: wrap(async req => h(req).uploadImage(headersOf(req), Buffer.from(await req.arrayBuffer()), req.headers.get("content-type"))) });
 
 app.http("preview", { methods: ["POST"], route: "preview", authLevel: "anonymous",
-  handler: wrap(async req => h().preview(headersOf(req), await jsonBody(req))) });
+  handler: wrap(async req => h(req).preview(headersOf(req), await jsonBody(req))) });
 
 app.http("getImage", { methods: ["GET"], route: "images/{id}", authLevel: "anonymous",
-  handler: wrap(async req => h().getImage(req.params.id)) });
+  handler: wrap(async req => h(req).getImage(req.params.id)) });

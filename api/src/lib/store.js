@@ -8,11 +8,12 @@ const IMG_CONTAINER = "images";
 const PK_ACT = "act";
 const PK_VOTE = "vote";
 
-function makeStore(connectionString) {
+function makeStore(connectionString, { prefix = "" } = {}) {
+  prefix = String(prefix).toLowerCase().replace(/[^a-z0-9]/g, "");
   if (!connectionString) throw new Error("STORAGE_CONNECTION_STRING is not set");
   const opts = { allowInsecureConnection: /UseDevelopmentStorage|127\.0\.0\.1|localhost/i.test(connectionString) };
-  const acts = TableClient.fromConnectionString(connectionString, ACT_TABLE, opts);
-  const votes = TableClient.fromConnectionString(connectionString, VOTE_TABLE, opts);
+  const acts = TableClient.fromConnectionString(connectionString, prefix + ACT_TABLE, opts);
+  const votes = TableClient.fromConnectionString(connectionString, prefix + VOTE_TABLE, opts);
   const blobs = BlobServiceClient.fromConnectionString(connectionString).getContainerClient(IMG_CONTAINER);
 
   let ready = null;
