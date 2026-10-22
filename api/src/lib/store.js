@@ -47,6 +47,7 @@ function makeStore(connectionString, { prefix = "" } = {}) {
       catch (e) { if (e.statusCode === 404) return null; throw e; }
     },
     async createActivity(a) { await ensure(); await acts.createEntity(fromAct(a)); },
+    async upsertActivity(a) { await ensure(); await acts.upsertEntity(fromAct(a), "Replace"); },
     async replaceActivity(a, etag) { await ensure(); await acts.updateEntity(fromAct(a), "Replace", { etag }); },
     async deleteActivity(id) {
       await ensure();

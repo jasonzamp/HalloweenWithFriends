@@ -29,6 +29,25 @@ function wrap(fn) {
   };
 }
 
+// One-off: copy the test copy's activities onto the real page. Protected by a token only the deployer holds
+// (just its SHA-256 is here); removed again after use.
+const PROMOTE_HASH = "c677fc4cb8fdea55322a46723300e00022e22e23f7788efdfed40aa4c920e2c7";
+app.http("promote", { methods: ["POST"], route: "admin/promote", authLevel: "anonymous",
+  handler: wrap(async req => {
+    const tok = req.headers.get("x-promote-token") || "";
+    if (require("crypto").createHash("sha256").update(tok).digest("hex") !== PROMOTE_HASH) return { status: 404, body: { error: "Not found" } };
+    const conn = process.env.STORAGE_CONNECTION_STRING;
+    const test = makeStore(conn, { prefix: "test" }), live = makeStore(conn);
+    const have = new Set((await live.listActivities()).map(a => a.id));
+    const copied = [];
+    for (const a of await test.listActivities()) {
+      if (have.has(a.id)) continue;
+      const { etag, ...plain } = a;
+      await live.upsertActivity(plain); copied.push(a.title);
+    }
+    return { status: 200, body: { copied } };
+  }) });
+
 app.http("state", { methods: ["GET"], route: "state", authLevel: "anonymous", handler: wrap(req => h(req).state()) });
 
 app.http("createActivity", { methods: ["POST"], route: "activities", authLevel: "anonymous",
