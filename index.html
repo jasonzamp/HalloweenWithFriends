@@ -133,22 +133,27 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(46px,13vw,68px);li
 .who{font-size:14px;color:var(--muted);overflow-wrap:anywhere;min-width:0}
 .opts{display:grid;gap:8px}
 .opts-h{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.orow{position:relative;display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2);overflow:hidden}
-.orow.mine{border:2px solid var(--pumpkin);padding:7px}
-.orow .bar{position:absolute;inset:0 auto 0 0;background:rgba(242,137,43,.17);transition:width .3s ease;pointer-events:none}
-.othumb{position:relative;flex:none;width:64px;height:64px;border-radius:10px;border:0;padding:0;overflow:hidden;background:var(--bg);cursor:zoom-in;display:block}
-.othumb img{width:100%;height:100%;object-fit:cover;display:block}
-.othumb.none{cursor:default;display:grid;place-items:center;opacity:.55}
-.opick{position:relative;flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;border:0;padding:4px 6px 4px 0;text-align:left;cursor:pointer;min-height:56px;touch-action:manipulation}
-.opick .lbl{flex:1;min-width:0;display:grid;overflow-wrap:anywhere}
-.opick .lbl b{font-weight:700;font-size:15px}
-.opick .lbl small{color:var(--candle);font-weight:600;font-variant-numeric:tabular-nums;font-size:13px}
-.opick .lbl em{font-style:normal;color:var(--muted);font-size:12px}
-.opick .n{font-variant-numeric:tabular-nums;font-weight:800;font-size:16px}
-.orow.mine .opick .lbl em::before{content:"Your pick · ";color:var(--candle);font-weight:600}
-.olink{position:relative;flex:none;width:40px;height:40px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);color:var(--candle);text-decoration:none;font-weight:700;background:var(--surface)}
+/* options as ticket cards: poster on the left, details on the right, a blurred copy of the poster behind */
+.tix{position:relative;display:flex;gap:12px;padding:10px;border:1px solid var(--line);border-radius:16px;background:#120c16;overflow:hidden}
+.tix.mine{border:2px solid var(--pumpkin);padding:9px}
+.tbg{position:absolute;inset:-24px;width:calc(100% + 48px);height:calc(100% + 48px);max-width:none;object-fit:cover;filter:blur(16px) brightness(.42);pointer-events:none}
+.pcol{position:relative;flex:none;width:96px;display:flex;flex-direction:column;gap:6px}
+.poster{position:relative;display:block;width:100%;aspect-ratio:2/3;border-radius:10px;overflow:hidden;border:0;padding:0;background:var(--bg);box-shadow:0 8px 18px rgba(0,0,0,.6);cursor:zoom-in}
+.poster img{width:100%;height:100%;object-fit:cover;display:block}
+.poster.add{cursor:pointer;border:1.5px dashed #6a5578;box-shadow:none;background:rgba(23,17,28,.6);display:grid;place-items:center;align-content:center;gap:6px;color:var(--muted);font-weight:700;font-size:13px}
+.tchg{background:rgba(23,17,28,.75);border:1px solid var(--line);color:var(--fg);border-radius:8px;font-size:12px;font-weight:700;padding:5px 0;cursor:pointer}
+.tinfo{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding:4px 0;background:none;border:0;text-align:left;cursor:pointer;color:inherit;touch-action:manipulation}
+.tinfo.haslink{padding-right:40px}
+.tinfo b{font-weight:800;font-size:17px;line-height:1.2;overflow-wrap:anywhere}
+.tinfo small{color:var(--candle);font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
+.tinfo em{font-style:normal;color:#cdbfd6;font-size:12px}
+.tfoot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:8px}
+.tchip{border:1px solid var(--muted);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700}
+.tix.mine .tchip{background:var(--pumpkin);border-color:var(--pumpkin);color:var(--pumpkin-ink)}
+.tn{font-weight:800;font-size:22px;font-variant-numeric:tabular-nums;line-height:1}
+.olink{position:absolute;top:10px;right:10px;z-index:1;width:36px;height:36px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);color:var(--candle);text-decoration:none;font-weight:700;background:rgba(23,17,28,.75)}
 .addo{width:100%;border-style:dashed;color:var(--muted)}
-.orow .opick:focus-visible,.othumb:focus-visible,.olink:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
+.tinfo:focus-visible,.poster:focus-visible,.tchg:focus-visible,.olink:focus-visible,.pslot:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
 .foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 .confirm{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .btn.danger{border-color:var(--danger);color:var(--danger);background:transparent}
@@ -178,8 +183,13 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
 .drop.over{border-color:var(--pumpkin);color:var(--fg)}
 .drop img{max-height:200px;border-radius:10px}
 .optrows{display:grid;gap:8px}
-.optrow{display:grid;grid-template-columns:1fr 84px 44px;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--line)}
-.optrow .orl{grid-column:1/-1}
+.optrow{display:flex;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.pslot{position:relative;flex:none;width:72px;aspect-ratio:2/3;border-radius:10px;border:1.5px dashed #6a5578;background:var(--bg);color:var(--muted);display:grid;place-items:center;text-align:center;font-size:12px;font-weight:700;cursor:pointer;overflow:hidden;padding:4px}
+.pslot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pslot img:not([hidden]) ~ .ptxt{position:absolute;left:4px;right:4px;bottom:4px;background:rgba(23,17,28,.88);color:var(--fg);border-radius:6px;padding:2px 0;font-size:11px}
+.pslot:has(img:not([hidden])){border-style:solid;border-color:var(--line)}
+.pf{flex:1;min-width:0;display:grid;gap:8px}
+.pf2{display:grid;grid-template-columns:1fr 44px;gap:8px}
 .hint2{font-size:13px;color:var(--muted);margin:0}
 .err{color:var(--danger);font-size:14px;margin:0}
 .actions{display:grid;grid-template-columns:1fr 2fr;gap:8px}
@@ -337,7 +347,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     <h3>New option</h3>
     <p class="hint" id="optFor"></p>
     <div style="display:grid;gap:6px">
-      <label for="o-img">Photo</label>
+      <label for="o-img">Poster</label>
       <div class="drop" id="oDrop" tabindex="0" role="button" aria-label="Choose a photo">
         <span id="oDropText">📸 Tap to add a photo</span>
         <img id="oPreview" alt="Preview of the option's picture" hidden>
@@ -368,6 +378,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
   <button class="btn small close" id="viewerClose" type="button">Close ✕</button>
   <img id="viewerImg" alt="">
 </div>
+<input type="file" id="posterFile" accept="image/*" hidden>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -501,15 +512,19 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
             ${opts.map(([oid, o]) => {
               const n = t.cnt[oid] || 0, me = mv.picks?.[a.id] === oid, op = fmtPrice(o.price);
               const who = (t.who[oid] || []).map(nameOf).join(", ");
-              const thumb = o.imageId
-                ? `<button class="othumb" type="button" data-act="oview" aria-label="View picture for ${esc(o.label)}"><img src="/api/images/${esc(o.imageId)}" alt="${esc(o.label)}" loading="lazy"></button>`
-                : `<span class="othumb none" aria-hidden="true"><svg viewBox="0 0 120 100" width="30" height="25"><use href="#pumpkin"/></svg></span>`;
-              return `<div class="orow${me ? " mine" : ""}"><span class="bar" style="width:${n ? (n / maxN) * 100 : 0}%"></span>${thumb}
-                <button class="opick" type="button" data-act="pick" data-opt="${esc(oid)}" aria-pressed="${me}">
-                  <span class="lbl"><b>${esc(o.label)}</b>${op ? `<small>${esc(op)}${/^£/.test(op) ? " pp" : ""}</small>` : ""}${who || me ? `<em>${esc(who)}</em>` : ""}</span><span class="n">${n}</span></button>
+              const img = o.imageId ? "/api/images/" + esc(o.imageId) : "";
+              const canChange = o.by === voterId || a.createdBy === voterId || !!adminCode;
+              const poster = img
+                ? `<button class="poster" type="button" data-act="oview" aria-label="View the poster for ${esc(o.label)}"><img src="${img}" alt="${esc(o.label)}" loading="lazy"></button>${canChange ? `<button class="tchg" type="button" data-act="oposter" data-opt="${esc(oid)}">Change</button>` : ""}`
+                : `<button class="poster add" type="button" data-act="oposter" data-opt="${esc(oid)}" aria-label="Add a poster for ${esc(o.label)}"><svg viewBox="0 0 120 100" width="34" height="28" aria-hidden="true"><use href="#pumpkin"/></svg>+ Poster</button>`;
+              return `<div class="tix${me ? " mine" : ""}">${img ? `<img class="tbg" src="${img}" alt="" aria-hidden="true" loading="lazy">` : ""}
+                <div class="pcol">${poster}</div>
+                <button class="tinfo${o.url ? " haslink" : ""}" type="button" data-act="pick" data-opt="${esc(oid)}" aria-pressed="${me}">
+                  <b>${esc(o.label)}</b>${op ? `<small>${esc(op)}${/^£/.test(op) ? " pp" : ""}</small>` : ""}<em>${esc(who || "No votes yet")}</em>
+                  <span class="tfoot"><span class="tchip">${me ? "✓ Your pick" : "Pick this"}</span><span class="tn">${n}</span></span></button>
                 ${o.url ? `<a class="olink" href="${esc(o.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open link for ${esc(o.label)}">↗</a>` : ""}</div>`;
             }).join("")}
-            <button class="btn small ghost addo" type="button" data-act="addopt">+ Add an option${opts.length ? "" : " (with a photo)"}</button>
+            <button class="btn small ghost addo" type="button" data-act="addopt">+ Add an option${opts.length ? "" : " with a poster"}</button>
           </div>
           <div class="foot"><span>Added by ${esc(a.createdBy === voterId ? "you" : (a.createdByName || "someone"))}</span>
             ${canDel ? (S.confirmDel === a.id
@@ -558,6 +573,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     const aid = b.closest(".card")?.dataset.id, act = b.dataset.act;
     if (act === "view" || act === "oview") { const img = b.querySelector("img"); $("#viewerImg").src = img.src; $("#viewerImg").alt = img.alt; $("#viewer").hidden = false; }
     else if (act === "addopt") needName(() => openOptSheet(aid));
+    else if (act === "oposter") { const oid = b.dataset.opt; needName(() => { S.posterFor = { aid, oid }; $("#posterFile").click(); }); }
     else if (act === "going") needName(() => toggleGoing(aid));
     else if (act === "pick") needName(() => pick(aid, b.dataset.opt));
     else if (act === "del") { S.confirmDel = aid; render(); }
@@ -590,26 +606,28 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
   const looksUrl = v => /^\S+\.\S{2,}$/.test(v.trim());
 
   // A photo slot: the person's own photo wins; otherwise a picture grabbed from the pasted link.
-  function picker({ drop, input, preview, text, emptyText, urlInput }) {
+  const LONG = { prep: "Preparing image…", mine: "Tap to change the photo", grab: "Grabbing a picture from the link…", got: "Picture from the link · tap to use your own" };
+  const SHORT = { prep: "…", mine: "Change", grab: "Grabbing…", got: "From link" };
+  function picker({ drop, input, preview, text, emptyText, urlInput, msgs = LONG }) {
     const p = { blob: null, autoId: "", autoFor: "", busy: null };
     const show = (src, msg) => { preview.src = src; preview.hidden = false; text.textContent = msg; };
     p.reset = () => { Object.assign(p, { blob: null, autoId: "", autoFor: "", busy: null }); preview.hidden = true; preview.removeAttribute("src"); text.textContent = emptyText; };
     p.setFile = async file => {
       if (!file) return;
       if (!/^image\//.test(file.type)) { toast("That file isn't an image"); return; }
-      text.textContent = "Preparing image…";
+      text.textContent = msgs.prep;
       p.blob = await shrink(file); p.autoId = "";
-      show(URL.createObjectURL(p.blob), "Tap to change the photo");
+      show(URL.createObjectURL(p.blob), msgs.mine);
     };
     p.fromLink = url => {
       if (p.blob || !looksUrl(url) || url === p.autoFor) return;
-      p.autoFor = url; text.textContent = "Grabbing a picture from the link…";
+      p.autoFor = url; text.textContent = msgs.grab;
       const run = api("preview", { method: "POST", body: { url } }).then(r => {
         if (p.autoFor !== url || p.blob) return;
-        p.autoId = r.id; show("/api/images/" + r.id, "Picture from the link · tap to use your own");
+        p.autoId = r.id; show("/api/images/" + r.id, msgs.got);
       }).catch(e => {
         if (p.autoFor !== url || p.blob) return;
-        p.autoFor = ""; if (!p.autoId) { preview.hidden = true; text.textContent = e.message; }
+        p.autoFor = ""; if (!p.autoId) { preview.hidden = true; if (msgs === SHORT) { text.textContent = emptyText; toast(e.message); } else text.textContent = e.message; }
       }).finally(() => { if (p.busy === run) p.busy = null; });
       p.busy = run;
     };
@@ -629,7 +647,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     return p;
   }
   const actPic = picker({ drop: $("#drop"), input: $("#f-img"), preview: $("#preview"), text: $("#dropText"), emptyText: "📸 Tap to add a screenshot", urlInput: $("#f-url") });
-  const optPic = picker({ drop: $("#oDrop"), input: $("#o-img"), preview: $("#oPreview"), text: $("#oDropText"), emptyText: "📸 Tap to add a photo", urlInput: $("#o-url") });
+  const optPic = picker({ drop: $("#oDrop"), input: $("#o-img"), preview: $("#oPreview"), text: $("#oDropText"), emptyText: "📸 Tap to add a poster", urlInput: $("#o-url") });
   document.addEventListener("paste", e => {
     const target = !$("#optBg").hidden ? optPic : !$("#sheetBg").hidden ? actPic : null;
     if (!target) return;
@@ -641,8 +659,12 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
   function optRow() {
     const id = Math.random().toString(36).slice(2, 8), row = document.createElement("div");
     row.className = "optrow";
-    row.innerHTML = `<input id="or-${id}" maxlength="60" placeholder="e.g. Fri 30 Oct, 7pm" aria-label="Option"><input id="orp-${id}" maxlength="20" inputmode="decimal" placeholder="£" aria-label="Option price"><button type="button" class="btn small ghost" aria-label="Remove option">✕</button><input class="orl" id="orl-${id}" maxlength="500" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="Link for its picture (optional)" aria-label="Option link">`;
-    row.querySelector("button").onclick = () => row.remove();
+    row.innerHTML = `<div class="pslot" tabindex="0" role="button" aria-label="Add a poster for this option"><img alt="" hidden><span class="ptxt">+ Poster</span></div><input type="file" accept="image/*" hidden>
+      <div class="pf"><input class="o-l" id="or-${id}" maxlength="60" placeholder="e.g. Fri 30 Oct, 7pm" aria-label="Option">
+        <div class="pf2"><input class="o-p" id="orp-${id}" maxlength="20" inputmode="decimal" placeholder="£ per person" aria-label="Option price"><button type="button" class="btn small ghost" aria-label="Remove option">✕</button></div>
+        <input class="o-u" id="orl-${id}" maxlength="500" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="Link (optional)" aria-label="Option link"></div>`;
+    row.querySelector(".pf2 button").onclick = () => row.remove();
+    row._pic = picker({ drop: row.querySelector(".pslot"), input: row.querySelector("input[type=file]"), preview: row.querySelector(".pslot img"), text: row.querySelector(".ptxt"), emptyText: "+ Poster", urlInput: row.querySelector(".o-u"), msgs: SHORT });
     $("#optRows").appendChild(row);
   }
   $("#addBtn").onclick = () => needName(() => {
@@ -652,8 +674,6 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
   $("#cancel").onclick = () => closeSheet("#sheetBg");
   $("#addRow").onclick = () => optRow();
 
-  async function grabId(url) { if (!looksUrl(url)) return ""; try { return (await api("preview", { method: "POST", body: { url } })).id; } catch { return ""; } }
-
   $("#form").addEventListener("submit", async e => {
     e.preventDefault();
     const err = $("#formErr"); err.hidden = true;
@@ -661,15 +681,31 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     if (!title) { err.textContent = "Give the activity a name."; err.hidden = false; $("#f-title").focus(); return; }
     const save = $("#save"); save.disabled = true; save.textContent = "Adding…";
     try {
-      const rows = [...document.querySelectorAll("#optRows .optrow")].map(r => { const [l, p, u] = r.querySelectorAll("input"); return { label: l.value.trim(), price: p.value.trim(), url: u.value.trim() }; }).filter(o => o.label);
-      if (rows.some(o => o.url)) save.textContent = "Grabbing pictures…";
-      const [imageId, options] = await Promise.all([actPic.imageId(), Promise.all(rows.map(async o => ({ ...o, imageId: o.url ? await grabId(o.url) : "" })))]);
+      const rows = [...document.querySelectorAll("#optRows .optrow")].filter(r => r.querySelector(".o-l").value.trim());
+      save.textContent = "Uploading…";
+      const [imageId, options] = await Promise.all([actPic.imageId(), Promise.all(rows.map(async r => ({
+        label: r.querySelector(".o-l").value.trim(), price: r.querySelector(".o-p").value.trim(), url: r.querySelector(".o-u").value.trim(),
+        imageId: await r._pic.imageId().catch(() => "") })))]);
       await api("activities", { method: "POST", body: { title, price: $("#f-price").value.trim(), url: $("#f-url").value.trim(), desc: $("#f-desc").value.trim(), imageId, options, name: S.name } });
       closeSheet("#sheetBg"); toast("Added to the vote 🎃"); await load();
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     } catch (ex) { err.textContent = ex.message; err.hidden = false; }
     finally { save.disabled = false; save.textContent = "Add to the vote"; }
   });
+
+  // ---- poster for an existing option
+  $("#posterFile").onchange = async e => {
+    const file = e.target.files[0]; e.target.value = "";
+    const f = S.posterFor; if (!file || !f) return;
+    if (!/^image\//.test(file.type)) { toast("That file isn't an image"); return; }
+    toast("Uploading poster…");
+    try {
+      const blob = await shrink(file);
+      const { id } = await api("images", { method: "POST", raw: blob, type: blob.type || "image/jpeg" });
+      await api(`activities/${encodeURIComponent(f.aid)}/options/${encodeURIComponent(f.oid)}/image`, { method: "PUT", body: { imageId: id } });
+      toast("Poster added 🎃"); await load();
+    } catch (err) { toast(err.message); }
+  };
 
   // ---- new option
   function openOptSheet(aid) {

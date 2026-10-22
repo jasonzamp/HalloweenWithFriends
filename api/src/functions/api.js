@@ -37,6 +37,9 @@ app.http("createActivity", { methods: ["POST"], route: "activities", authLevel: 
 app.http("addOption", { methods: ["POST"], route: "activities/{id}/options", authLevel: "anonymous",
   handler: wrap(async req => h(req).addOption(headersOf(req), req.params.id, await jsonBody(req))) });
 
+app.http("setOptionImage", { methods: ["PUT"], route: "activities/{id}/options/{oid}/image", authLevel: "anonymous",
+  handler: wrap(async req => h(req).setOptionImage(headersOf(req), req.params.id, req.params.oid, await jsonBody(req))) });
+
 app.http("deleteActivity", { methods: ["DELETE"], route: "activities/{id}", authLevel: "anonymous",
   handler: wrap(async req => h(req).deleteActivity(headersOf(req), req.params.id)) });
 
