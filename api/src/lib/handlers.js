@@ -107,6 +107,21 @@ function makeHandlers(store, { adminCode = "", grab = url => grabLinkImage(url) 
       throw new HttpError(409, "Someone else was editing at the same time. Try again.");
     },
 
+    async setActivityImage(headers, actId, body) {
+      const voterId = voterIdOf(headers);
+      const imageId = imgId(body?.imageId);
+      if (!imageId) throw bad("Pick a picture first.");
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const a = await store.getActivity(actId);
+        if (!a) throw new HttpError(404, "That activity was removed.");
+        if (a.imageId && a.createdBy !== voterId && !isAdmin(headers)) throw new HttpError(403, "Only the person who added this activity can change its picture.");
+        a.imageId = imageId;
+        try { await store.replaceActivity(a, a.etag); return { status: 200, body: publicAct(a) }; }
+        catch (e) { if (e.statusCode !== 412) throw e; }
+      }
+      throw new HttpError(409, "Someone else was editing at the same time. Try again.");
+    },
+
     async setWhen(headers, actId, body) {
       const voterId = voterIdOf(headers);
       const when = cleanWhen(body?.when);

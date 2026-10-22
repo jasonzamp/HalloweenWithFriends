@@ -204,6 +204,10 @@ button.whenchip{cursor:pointer}
 .ndrow span{flex:none;color:var(--muted);font-size:13px}
 .ndrow.sel{border-style:solid;border-color:var(--candle)}
 .gtile:focus-visible,.gadd:focus-visible,.ndrow:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
+.addpic{width:100%;border:0;padding:0;font:inherit;color:var(--fg);cursor:pointer;display:grid;place-items:center;align-content:center;gap:8px;font-weight:700;font-size:15px}
+.addpic span{background:rgba(23,17,28,.85);border:1px solid var(--line);border-radius:999px;padding:7px 14px}
+.shotchg{position:absolute;top:12px;right:12px;z-index:1;background:rgba(23,17,28,.88);border:1px solid var(--line);color:var(--fg);border-radius:999px;padding:5px 12px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.addpic:focus-visible,.shotchg:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
 .foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 .confirm{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .btn.danger{border-color:var(--danger);color:var(--danger);background:transparent}
@@ -571,7 +575,9 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
       const maxN = Math.max(1, ...opts.map(([o]) => t.cnt[o] || 0));
       const canDel = a.createdBy === voterId || !!adminCode;
       return `<article class="card${lead ? " lead" : ""}" data-id="${esc(a.id)}">
-        ${a.imageId ? `<button class="shot-btn" type="button" data-act="view" aria-label="View screenshot full screen"><img class="shot" src="/api/images/${esc(a.imageId)}" alt="Screenshot for ${esc(a.title)}" loading="lazy"></button>` : `<div class="shot-empty">No screenshot yet</div>`}
+        ${a.imageId
+          ? `<button class="shot-btn" type="button" data-act="view" aria-label="View the picture full screen"><img class="shot" src="/api/images/${esc(a.imageId)}" alt="Picture for ${esc(a.title)}" loading="lazy"></button>${canDel ? `<button class="shotchg" type="button" data-act="apic">Change picture</button>` : ""}`
+          : `<button class="shot-empty addpic" type="button" data-act="apic"><svg viewBox="0 0 120 100" width="44" height="37" aria-hidden="true"><use href="#pumpkin"/></svg><span>📸 Add a picture</span></button>`}
         <span class="rank">${lead ? `<svg class="mini" viewBox="0 0 120 100" aria-hidden="true"><use href="#pumpkin"/></svg>Top pick` : "#" + (i + 1)} · ${t.going.length} in</span>
         <div class="body">
           <div class="titlerow"><h2>${esc(a.title)}</h2></div>
@@ -691,6 +697,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     else if (act === "when") { const a = S.acts.find(x => x.id === aid); if (a) openCal(a.when, async v => {
       try { await api(`activities/${encodeURIComponent(aid)}/when`, { method: "PUT", body: { when: v } }); toast(v ? "Date saved" : "Date removed"); await load(); }
       catch (err) { toast(err.message); } }); }
+    else if (act === "apic") needName(() => { S.posterFor = { aid, whole: true }; $("#posterFile").click(); });
     else if (act === "oposter") { const oid = b.dataset.opt; needName(() => { S.posterFor = { aid, oid }; $("#posterFile").click(); }); }
     else if (act === "going") needName(() => toggleGoing(aid));
     else if (act === "pick") needName(() => pick(aid, b.dataset.opt));
@@ -867,12 +874,13 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     const file = e.target.files[0]; e.target.value = "";
     const f = S.posterFor; if (!file || !f) return;
     if (!/^image\//.test(file.type)) { toast("That file isn't an image"); return; }
-    toast("Uploading poster…");
+    toast("Uploading…");
     try {
       const blob = await shrink(file);
       const { id } = await api("images", { method: "POST", raw: blob, type: blob.type || "image/jpeg" });
-      await api(`activities/${encodeURIComponent(f.aid)}/options/${encodeURIComponent(f.oid)}/image`, { method: "PUT", body: { imageId: id } });
-      toast("Poster added 🎃"); await load();
+      const path = f.whole ? `activities/${encodeURIComponent(f.aid)}/image` : `activities/${encodeURIComponent(f.aid)}/options/${encodeURIComponent(f.oid)}/image`;
+      await api(path, { method: "PUT", body: { imageId: id } });
+      toast(f.whole ? "Picture added 🎃" : "Poster added 🎃"); await load();
     } catch (err) { toast(err.message); }
   };
 
