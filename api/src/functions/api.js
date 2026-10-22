@@ -43,6 +43,9 @@ app.http("setOptionImage", { methods: ["PUT"], route: "activities/{id}/options/{
 app.http("setWhen", { methods: ["PUT"], route: "activities/{id}/when", authLevel: "anonymous",
   handler: wrap(async req => h(req).setWhen(headersOf(req), req.params.id, await jsonBody(req))) });
 
+app.http("deleteOption", { methods: ["DELETE"], route: "activities/{id}/options/{oid}", authLevel: "anonymous",
+  handler: wrap(async req => h(req).deleteOption(headersOf(req), req.params.id, req.params.oid)) });
+
 app.http("deleteActivity", { methods: ["DELETE"], route: "activities/{id}", authLevel: "anonymous",
   handler: wrap(async req => h(req).deleteActivity(headersOf(req), req.params.id)) });
 

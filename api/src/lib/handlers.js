@@ -121,6 +121,18 @@ function makeHandlers(store, { adminCode = "", grab = url => grabLinkImage(url) 
       throw new HttpError(409, "Someone else was editing at the same time. Try again.");
     },
 
+    async deleteOption(headers, actId, optId) {
+      voterIdOf(headers);
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const a = await store.getActivity(actId);
+        if (!a || !a.options[optId]) return { status: 204 };
+        delete a.options[optId];
+        try { await store.replaceActivity(a, a.etag); return { status: 204 }; }
+        catch (e) { if (e.statusCode !== 412) throw e; }
+      }
+      throw new HttpError(409, "Someone else was editing at the same time. Try again.");
+    },
+
     async deleteActivity(headers, actId) {
       const voterId = voterIdOf(headers);
       const a = await store.getActivity(actId);

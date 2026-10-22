@@ -164,6 +164,9 @@ button.whenchip{cursor:pointer}
 .poster{position:relative;display:block;width:100%;aspect-ratio:2/3;border-radius:10px;overflow:hidden;border:0;padding:0;background:var(--bg);box-shadow:0 8px 18px rgba(0,0,0,.6);cursor:zoom-in}
 .poster img{width:100%;height:100%;object-fit:cover;display:block}
 .poster.add{cursor:pointer;border:1.5px dashed #6a5578;box-shadow:none;background:rgba(23,17,28,.6);display:grid;place-items:center;align-content:center;gap:6px;color:var(--muted);font-weight:700;font-size:13px}
+.tdel{background:none;border:0;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.tconfirm{position:absolute;inset:0;z-index:2;background:rgba(18,12,22,.93);display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:12px;text-align:center;font-weight:700}
+.tconfirm span{width:100%}
 .tchg{background:rgba(23,17,28,.75);border:1px solid var(--line);color:var(--fg);border-radius:8px;font-size:12px;font-weight:700;padding:5px 0;cursor:pointer}
 .tinfo{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding:4px 0;background:none;border:0;text-align:left;cursor:pointer;color:inherit;touch-action:manipulation}
 .tinfo.haslink{padding-right:40px}
@@ -566,7 +569,8 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
                 ? `<button class="poster" type="button" data-act="oview" aria-label="View the poster for ${esc(o.label)}"><img src="${img}" alt="${esc(o.label)}" loading="lazy"></button>${canChange ? `<button class="tchg" type="button" data-act="oposter" data-opt="${esc(oid)}">Change</button>` : ""}`
                 : `<button class="poster add" type="button" data-act="oposter" data-opt="${esc(oid)}" aria-label="Add a poster for ${esc(o.label)}"><svg viewBox="0 0 120 100" width="34" height="28" aria-hidden="true"><use href="#pumpkin"/></svg>+ Poster</button>`;
               return `<div class="tix${me ? " mine" : ""}">${img ? `<img class="tbg" src="${img}" alt="" aria-hidden="true" loading="lazy">` : ""}
-                <div class="pcol">${poster}</div>
+                <div class="pcol">${poster}<button class="tdel" type="button" data-act="odel" data-opt="${esc(oid)}">Remove</button></div>
+                ${S.confirmOpt === oid ? `<div class="tconfirm"><span>Remove “${esc(o.label)}” for everyone?</span><button class="btn small danger" type="button" data-act="odel-yes" data-opt="${esc(oid)}">Remove</button><button class="btn small ghost" type="button" data-act="odel-no">Keep</button></div>` : ""}
                 <button class="tinfo${o.url ? " haslink" : ""}" type="button" data-act="pick" data-opt="${esc(oid)}" aria-pressed="${me}">
                   <b>${esc(o.label)}</b>${op ? `<small>${esc(op)}${/^£/.test(op) ? " pp" : ""}</small>` : ""}<em>${esc(who || "No votes yet")}</em>
                   <span class="tfoot"><span class="tchip">${me ? "✓ Your pick" : "Pick this"}</span><span class="tn">${n}</span></span></button>
@@ -621,6 +625,13 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     const aid = b.closest(".card")?.dataset.id, act = b.dataset.act;
     if (act === "view" || act === "oview") { const img = b.querySelector("img"); $("#viewerImg").src = img.src; $("#viewerImg").alt = img.alt; $("#viewer").hidden = false; }
     else if (act === "addopt") needName(() => openOptSheet(aid));
+    else if (act === "odel") { S.confirmOpt = b.dataset.opt; render(); }
+    else if (act === "odel-no") { S.confirmOpt = null; render(); }
+    else if (act === "odel-yes") {
+      const oid = b.dataset.opt; S.confirmOpt = null;
+      const a = S.acts.find(x => x.id === aid); if (a?.options) delete a.options[oid]; render();
+      api(`activities/${encodeURIComponent(aid)}/options/${encodeURIComponent(oid)}`, { method: "DELETE" }).then(() => toast("Option removed")).catch(err => { toast(err.message); load(); });
+    }
     else if (act === "when") { const a = S.acts.find(x => x.id === aid); if (a) openCal(a.when, async v => {
       try { await api(`activities/${encodeURIComponent(aid)}/when`, { method: "PUT", body: { when: v } }); toast(v ? "Date saved" : "Date removed"); await load(); }
       catch (err) { toast(err.message); } }); }
