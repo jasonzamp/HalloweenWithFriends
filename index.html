@@ -560,7 +560,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     if (!S.loaded) { if (S.failed) list.innerHTML = `<div class="empty"><h2>Hmm, no signal</h2><p>We couldn't load the plans. Pull down to refresh or check your connection.</p></div>`; return; }
     const ranked = S.acts.map(a => ({ a, t: tally(a) })).sort((x, y) => y.t.going.length - x.t.going.length || x.a.createdAt - y.a.createdAt);
     if (!ranked.length) {
-      list.innerHTML = `<div class="empty"><svg class="ghost-ico floaty" viewBox="0 0 100 120" aria-hidden="true"><use href="#ghost"/></svg><h2>No plans yet</h2><p>Be the first: add an activity with its price, the website link and a screenshot.</p></div>`;
+      list.innerHTML = `<div class="empty"><svg class="ghost-ico floaty" viewBox="0 0 100 120" aria-hidden="true"><use href="#ghost"/></svg><h2>No plans yet</h2><p>Be the first: add a plan with its date, a picture and some options to vote on. It'll show up under its day.</p></div>`;
       return;
     }
     const top = ranked[0].t.going.length, mv = mine();
