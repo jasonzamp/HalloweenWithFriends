@@ -24,12 +24,12 @@ function makeStore(connectionString, { prefix = "" } = {}) {
   ]).catch(e => { ready = null; throw e; }));
 
   const toAct = e => ({
-    id: e.rowKey, title: e.title, price: e.price || "", url: e.url || "", desc: e.desc || "",
+    id: e.rowKey, title: e.title, when: e.when || "", price: e.price || "", url: e.url || "", desc: e.desc || "",
     imageId: e.imageId || "", options: safeJson(e.options, {}), createdBy: e.createdBy || "",
     createdByName: e.createdByName || "", createdAt: Number(e.createdAt) || 0, etag: e.etag,
   });
   const fromAct = a => ({
-    partitionKey: PK_ACT, rowKey: a.id, title: a.title, price: a.price, url: a.url, desc: a.desc,
+    partitionKey: PK_ACT, rowKey: a.id, title: a.title, when: a.when || "", price: a.price || "", url: a.url, desc: a.desc,
     imageId: a.imageId, options: JSON.stringify(a.options || {}), createdBy: a.createdBy,
     createdByName: a.createdByName, createdAt: a.createdAt,
   });

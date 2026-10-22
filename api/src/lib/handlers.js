@@ -5,6 +5,13 @@ const { grabLinkImage, PreviewError } = require("./linkimage");
 const LIMITS = { title: 80, price: 20, url: 500, desc: 600, optLabel: 60, name: 30, options: 12, imageBytes: 4 * 1024 * 1024 };
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
 const IMG_ID_RE = /^[0-9a-f-]{36}$/;
+const WHEN_RE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/;
+function cleanWhen(v) {
+  v = String(v ?? "").trim(); if (!v) return "";
+  const m = v.match(WHEN_RE);
+  if (!m || +m[2] < 1 || +m[2] > 12 || +m[3] < 1 || +m[3] > 31 || (m[4] && (+m[4] > 23 || +m[5] > 59))) throw new HttpError(400, "That date doesn't look right.");
+  return v;
+}
 const ID_RE = /^[A-Za-z0-9-]{6,64}$/;
 
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
@@ -58,7 +65,7 @@ function makeHandlers(store, { adminCode = "", grab = url => grabLinkImage(url) 
       const imageId = str(body?.imageId, 64);
       if (imageId && !ID_RE.test(imageId)) throw bad("Invalid image.");
       const a = {
-        id: newId(), title, price: str(body?.price, LIMITS.price), url: cleanUrl(body?.url),
+        id: newId(), title, when: cleanWhen(body?.when), price: "", url: cleanUrl(body?.url),
         desc: str(body?.desc, LIMITS.desc), imageId, options: cleanOptions(body?.options, voterId, name),
         createdBy: voterId, createdByName: name, createdAt: Date.now(),
       };
@@ -94,6 +101,20 @@ function makeHandlers(store, { adminCode = "", grab = url => grabLinkImage(url) 
         if (o.imageId && o.by !== voterId && a.createdBy !== voterId && !isAdmin(headers))
           throw new HttpError(403, "Only the person who added this option can change its poster.");
         o.imageId = imageId;
+        try { await store.replaceActivity(a, a.etag); return { status: 200, body: publicAct(a) }; }
+        catch (e) { if (e.statusCode !== 412) throw e; }
+      }
+      throw new HttpError(409, "Someone else was editing at the same time. Try again.");
+    },
+
+    async setWhen(headers, actId, body) {
+      const voterId = voterIdOf(headers);
+      const when = cleanWhen(body?.when);
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const a = await store.getActivity(actId);
+        if (!a) throw new HttpError(404, "That activity was removed.");
+        if (a.createdBy !== voterId && !isAdmin(headers)) throw new HttpError(403, "Only the person who added this activity can change its date.");
+        a.when = when;
         try { await store.replaceActivity(a, a.etag); return { status: 200, body: publicAct(a) }; }
         catch (e) { if (e.statusCode !== 412) throw e; }
       }

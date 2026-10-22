@@ -110,6 +110,29 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(46px,13vw,68px);li
 .card.lead .rank{background:var(--pumpkin);color:var(--pumpkin-ink);border-color:var(--pumpkin)}
 .mini{width:15px;height:13px}
 .body{padding:16px 16px 14px;display:grid;gap:14px;min-width:0}
+.flabel{font-size:14px;font-weight:600;color:var(--muted)}
+.whenbtn{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);font:inherit;font-size:16px;text-align:left;cursor:pointer}
+.whenbtn.empty span{color:var(--muted)}
+.whenbtn svg{color:var(--candle);flex:none}
+.whenchip{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:6px 13px;background:var(--surface-2);color:var(--candle);font:inherit;font-size:14px;font-weight:700;min-height:36px}
+button.whenchip{cursor:pointer}
+.whenchip.add{border-style:dashed;color:var(--muted);background:transparent}
+.calnav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.calnav b{font-family:var(--display);font-size:26px;font-weight:600}
+.calarrow{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);font-size:24px;line-height:1;cursor:pointer}
+.calarrow:disabled{opacity:.35;cursor:default}
+.calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.dow{font-size:12px;color:var(--muted);font-weight:700;padding:4px 0;letter-spacing:.04em}
+.day{aspect-ratio:1/1;max-height:48px;border-radius:12px;border:1px solid transparent;background:none;color:var(--fg);font:inherit;font-size:15px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
+.day.hw{background:rgba(242,137,43,.16);color:var(--candle)}
+.day.today{border-color:var(--muted)}
+.day.sel{background:var(--pumpkin);color:var(--pumpkin-ink);border-color:var(--pumpkin)}
+.day:disabled{opacity:.28;cursor:default}
+.day:focus-visible,.calarrow:focus-visible,.whenchip:focus-visible,.whenbtn:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
+.hwdot{display:inline-block;width:10px;height:10px;border-radius:3px;background:rgba(242,137,43,.45);vertical-align:-1px;margin-right:4px}
+.tquick{display:flex;flex-wrap:wrap;gap:6px}
+.tquick button{border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;min-height:34px}
+.tquick button.on{background:var(--pumpkin);color:var(--pumpkin-ink);border-color:var(--pumpkin)}
 .titlerow{display:flex;gap:10px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}
 .titlerow h2{font-family:var(--display);font-weight:600;font-size:30px;line-height:1.02;margin:0;text-wrap:balance;min-width:0;overflow-wrap:anywhere}
 .price{font-weight:700;color:var(--candle);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:18px}
@@ -307,14 +330,13 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     <label for="f-title">What is it?
       <input id="f-title" maxlength="80" placeholder="e.g. London Dungeon after dark" required>
     </label>
-    <div class="two">
-      <label for="f-price">£ per person
-        <input id="f-price" maxlength="20" inputmode="decimal" placeholder="32 or Free">
-      </label>
-      <label for="f-url">Website
-        <input id="f-url" maxlength="500" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="link">
-      </label>
+    <div style="display:grid;gap:6px">
+      <span class="flabel" id="f-when-lbl">Date &amp; time</span>
+      <button type="button" class="whenbtn empty" id="f-when" aria-labelledby="f-when-lbl f-when-txt"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="f-when-txt">Pick a date &amp; time</span></button>
     </div>
+    <label for="f-url">Website
+      <input id="f-url" maxlength="500" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="link">
+    </label>
     <label for="f-desc">Details
       <textarea id="f-desc" maxlength="600" placeholder="Where, what time, dress code…"></textarea>
     </label>
@@ -338,6 +360,30 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
       <button type="submit" class="btn primary" id="save">Add to the vote</button>
     </div>
   </form>
+</div>
+
+<!-- calendar -->
+<div class="sheet-bg" id="calBg" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="calTitle">
+    <div class="grip"></div>
+    <h3 id="calTitle">When?</h3>
+    <div class="calnav">
+      <button type="button" class="calarrow" id="calPrev" aria-label="Previous month">‹</button>
+      <b id="calMonth" aria-live="polite"></b>
+      <button type="button" class="calarrow" id="calNext" aria-label="Next month">›</button>
+    </div>
+    <div class="calgrid" id="calGrid"></div>
+    <p class="hint2"><span class="hwdot"></span> Halloween weekend</p>
+    <label for="calTime">Time (optional)
+      <input type="time" id="calTime" step="900">
+    </label>
+    <div class="tquick" id="calQuick"></div>
+    <p class="err" id="calErr" hidden></p>
+    <div class="actions">
+      <button type="button" class="btn ghost" id="calClear">No date</button>
+      <button type="button" class="btn primary" id="calDone">Done</button>
+    </div>
+  </div>
 </div>
 
 <!-- option sheet -->
@@ -496,13 +542,15 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
       const imIn = !!mv.going?.[a.id];
       const opts = Object.entries(a.options || {}).sort((x, y) => (x[1].at || 0) - (y[1].at || 0));
       const maxN = Math.max(1, ...opts.map(([o]) => t.cnt[o] || 0));
-      const price = fmtPrice(a.price);
       const canDel = a.createdBy === voterId || !!adminCode;
       return `<article class="card${lead ? " lead" : ""}" data-id="${esc(a.id)}">
         ${a.imageId ? `<button class="shot-btn" type="button" data-act="view" aria-label="View screenshot full screen"><img class="shot" src="/api/images/${esc(a.imageId)}" alt="Screenshot for ${esc(a.title)}" loading="lazy"></button>` : `<div class="shot-empty">No screenshot yet</div>`}
         <span class="rank">${lead ? `<svg class="mini" viewBox="0 0 120 100" aria-hidden="true"><use href="#pumpkin"/></svg>Top pick` : "#" + (i + 1)} · ${t.going.length} in</span>
         <div class="body">
-          <div class="titlerow"><h2>${esc(a.title)}</h2>${price ? `<div class="price">${esc(price)}${/^£/.test(price) ? " <small>pp</small>" : ""}</div>` : ""}</div>
+          <div class="titlerow"><h2>${esc(a.title)}</h2></div>
+          ${a.when
+            ? (canDel ? `<button class="whenchip" type="button" data-act="when" aria-label="Change the date"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>${esc(fmtWhen(a.when))}</button>` : `<span class="whenchip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>${esc(fmtWhen(a.when))}</span>`)
+            : (canDel ? `<button class="whenchip add" type="button" data-act="when"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Add date &amp; time</button>` : "")}
           ${a.desc ? `<p class="desc">${esc(a.desc)}</p>` : ""}
           ${a.url ? `<a class="link" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer"><span>${esc(host(a.url))}</span>Open ↗</a>` : ""}
           <button class="btn going ${imIn ? "on" : ""}" type="button" data-act="going" aria-pressed="${imIn}">${imIn ? "✓ I'm in" : "🙋 I'm in"}</button>
@@ -573,6 +621,9 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     const aid = b.closest(".card")?.dataset.id, act = b.dataset.act;
     if (act === "view" || act === "oview") { const img = b.querySelector("img"); $("#viewerImg").src = img.src; $("#viewerImg").alt = img.alt; $("#viewer").hidden = false; }
     else if (act === "addopt") needName(() => openOptSheet(aid));
+    else if (act === "when") { const a = S.acts.find(x => x.id === aid); if (a) openCal(a.when, async v => {
+      try { await api(`activities/${encodeURIComponent(aid)}/when`, { method: "PUT", body: { when: v } }); toast(v ? "Date saved" : "Date removed"); await load(); }
+      catch (err) { toast(err.message); } }); }
     else if (act === "oposter") { const oid = b.dataset.opt; needName(() => { S.posterFor = { aid, oid }; $("#posterFile").click(); }); }
     else if (act === "going") needName(() => toggleGoing(aid));
     else if (act === "pick") needName(() => pick(aid, b.dataset.opt));
@@ -586,7 +637,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
   $("#viewer").addEventListener("click", () => { $("#viewer").hidden = true; $("#viewerImg").removeAttribute("src"); });
 
   // ---- sheets
-  const SHEETS = ["#sheetBg", "#nameBg", "#optBg"];
+  const SHEETS = ["#sheetBg", "#nameBg", "#optBg", "#calBg"];
   function openSheet(sel) { $(sel).hidden = false; document.body.style.overflow = "hidden"; }
   function closeSheet(sel) { $(sel).hidden = true; if (SHEETS.every(x => $(x).hidden)) document.body.style.overflow = ""; }
   SHEETS.forEach(sel => $(sel).addEventListener("click", e => { if (e.target === $(sel)) closeSheet(sel); }));
@@ -668,7 +719,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     $("#optRows").appendChild(row);
   }
   $("#addBtn").onclick = () => needName(() => {
-    $("#form").reset(); $("#optRows").innerHTML = ""; optRow(); actPic.reset(); $("#formErr").hidden = true;
+    $("#form").reset(); $("#optRows").innerHTML = ""; optRow(); actPic.reset(); $("#formErr").hidden = true; setNewWhen("");
     openSheet("#sheetBg");
   });
   $("#cancel").onclick = () => closeSheet("#sheetBg");
@@ -686,12 +737,62 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
       const [imageId, options] = await Promise.all([actPic.imageId(), Promise.all(rows.map(async r => ({
         label: r.querySelector(".o-l").value.trim(), price: r.querySelector(".o-p").value.trim(), url: r.querySelector(".o-u").value.trim(),
         imageId: await r._pic.imageId().catch(() => "") })))]);
-      await api("activities", { method: "POST", body: { title, price: $("#f-price").value.trim(), url: $("#f-url").value.trim(), desc: $("#f-desc").value.trim(), imageId, options, name: S.name } });
+      await api("activities", { method: "POST", body: { title, when: S.newWhen || "", url: $("#f-url").value.trim(), desc: $("#f-desc").value.trim(), imageId, options, name: S.name } });
       closeSheet("#sheetBg"); toast("Added to the vote 🎃"); await load();
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     } catch (ex) { err.textContent = ex.message; err.hidden = false; }
     finally { save.disabled = false; save.textContent = "Add to the vote"; }
   });
+
+  // ---- date & time
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const pad = n => String(n).padStart(2, "0");
+  const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  function time12(t) { const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}${m ? ":" + pad(m) : ""}${h < 12 ? "am" : "pm"}`; }
+  function fmtWhen(v) {
+    const [d, t] = String(v || "").split("T"); if (!d) return "";
+    const [y, m, dd] = d.split("-").map(Number); const dt = new Date(y, m - 1, dd);
+    return `${DAYS[dt.getDay()]} ${dd} ${MONTHS[m - 1].slice(0, 3)}${t ? " · " + time12(t) : ""}`;
+  }
+  function setNewWhen(v) { S.newWhen = v; $("#f-when-txt").textContent = v ? fmtWhen(v) : "Pick a date & time"; $("#f-when").classList.toggle("empty", !v); }
+  $("#f-when").onclick = () => openCal(S.newWhen, setNewWhen);
+
+  const QUICK = ["12:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
+  const cal = { y: 0, m: 0, sel: "", done: null };
+  function openCal(value, done) {
+    const [d, t] = String(value || "").split("T");
+    const today = new Date(), base = d ? new Date(d + "T12:00") : (today <= new Date(2026, 10, 1) ? new Date(2026, 9, 30) : today);
+    Object.assign(cal, { y: base.getFullYear(), m: base.getMonth(), sel: d || "", done });
+    $("#calTime").value = t || ""; $("#calErr").hidden = true;
+    renderCal(); openSheet("#calBg");
+  }
+  function renderCal() {
+    const today = new Date(), todayIso = isoDay(today);
+    $("#calMonth").textContent = `${MONTHS[cal.m]} ${cal.y}`;
+    $("#calPrev").disabled = cal.y < today.getFullYear() || (cal.y === today.getFullYear() && cal.m <= today.getMonth());
+    const lead = (new Date(cal.y, cal.m, 1).getDay() + 6) % 7, days = new Date(cal.y, cal.m + 1, 0).getDate();
+    let h = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d => `<span class="dow" aria-hidden="true">${d[0]}</span>`).join("");
+    h += "<span></span>".repeat(lead);
+    for (let i = 1; i <= days; i++) {
+      const iso = `${cal.y}-${pad(cal.m + 1)}-${pad(i)}`;
+      const cls = ["day", iso >= "2026-10-30" && iso <= "2026-11-01" ? "hw" : "", iso === todayIso ? "today" : "", iso === cal.sel ? "sel" : ""].filter(Boolean).join(" ");
+      h += `<button type="button" class="${cls}" data-day="${iso}" ${iso < todayIso ? "disabled" : ""} aria-pressed="${iso === cal.sel}" aria-label="${fmtWhen(iso)}">${i}</button>`;
+    }
+    $("#calGrid").innerHTML = h;
+    const tv = $("#calTime").value;
+    $("#calQuick").innerHTML = QUICK.map(q => `<button type="button" data-t="${q}" class="${q === tv ? "on" : ""}">${time12(q)}</button>`).join("");
+  }
+  $("#calGrid").onclick = e => { const b = e.target.closest("[data-day]"); if (!b || b.disabled) return; cal.sel = b.dataset.day; $("#calErr").hidden = true; renderCal(); };
+  $("#calQuick").onclick = e => { const b = e.target.closest("[data-t]"); if (!b) return; $("#calTime").value = b.dataset.t; renderCal(); };
+  $("#calTime").addEventListener("input", renderCal);
+  $("#calPrev").onclick = () => { if (--cal.m < 0) { cal.m = 11; cal.y--; } renderCal(); };
+  $("#calNext").onclick = () => { if (++cal.m > 11) { cal.m = 0; cal.y++; } renderCal(); };
+  $("#calDone").onclick = () => {
+    if (!cal.sel) { $("#calErr").textContent = "Tap a day first."; $("#calErr").hidden = false; return; }
+    const t = $("#calTime").value; closeSheet("#calBg"); cal.done?.(cal.sel + (t ? "T" + t : ""));
+  };
+  $("#calClear").onclick = () => { closeSheet("#calBg"); cal.done?.(""); };
 
   // ---- poster for an existing option
   $("#posterFile").onchange = async e => {
