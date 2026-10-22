@@ -180,6 +180,30 @@ button.whenchip{cursor:pointer}
 .olink{position:absolute;top:10px;right:10px;z-index:1;width:36px;height:36px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);color:var(--candle);text-decoration:none;font-weight:700;background:rgba(23,17,28,.75)}
 .addo{width:100%;border-style:dashed;color:var(--muted)}
 .tinfo:focus-visible,.poster:focus-visible,.tchg:focus-visible,.olink:focus-visible,.pslot:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
+/* weekend at a glance */
+.glance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:start}
+.glance.many{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:calc((100% - 16px) / 3);overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}
+.gcol{display:flex;flex-direction:column;gap:8px;min-width:0;scroll-snap-align:start}
+.ghead{display:grid;text-align:center;padding:6px 0;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
+.ghead small{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.06em}
+.ghead b{font-family:var(--display);font-size:24px;font-weight:800;line-height:1.1}
+.ghead.hw b{color:var(--candle)}
+.ghead.on{background:var(--pumpkin);border-color:var(--pumpkin)}
+.ghead.on small,.ghead.on b{color:var(--pumpkin-ink)}
+.gtile{display:flex;flex-direction:column;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);color:var(--fg);text-align:left;cursor:pointer;font:inherit;touch-action:manipulation}
+.gtile img,.gtile .gph{display:block;width:100%;max-width:100%;aspect-ratio:1/1;object-fit:cover}
+.gtile .gph{display:grid;place-items:center;background:var(--surface-2)}
+.gtile.in{border-color:var(--pumpkin)}
+.gtile.sel{border:2px solid var(--candle);box-shadow:0 0 0 3px rgba(255,211,138,.25)}
+.gtx{display:grid;gap:1px;padding:6px 8px 8px;min-width:0}
+.gtx small{color:var(--candle);font-size:11px;font-weight:800}
+.gtx b{font-size:13px;font-weight:800;line-height:1.2;overflow-wrap:anywhere}
+.gadd{min-height:40px;border:1.5px dashed var(--line);border-radius:12px;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.nodate{display:grid;gap:6px}
+.ndrow{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px;padding:10px 12px;border:1.5px dashed var(--line);border-radius:12px;background:transparent;color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.ndrow span{flex:none;color:var(--muted);font-size:13px}
+.ndrow.sel{border-style:solid;border-color:var(--candle)}
+.gtile:focus-visible,.gadd:focus-visible,.ndrow:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
 .foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 .confirm{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .btn.danger{border-color:var(--danger);color:var(--danger);background:transparent}
@@ -456,7 +480,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     t.innerHTML = "<b>TEST COPY</b> · try anything here, the real page isn't affected";
     document.body.prepend(t);
   }
-  const S = { acts: [], votes: {}, name: store.get("hw.name"), loaded: false, failed: false, newImage: null, confirmDel: null, pending: null };
+  const S = { sel: store.get("hw.sel"), acts: [], votes: {}, name: store.get("hw.name"), loaded: false, failed: false, newImage: null, confirmDel: null, pending: null };
 
   // ---- API
   async function api(path, { method = "GET", body, raw, type } = {}) {
@@ -540,7 +564,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
       return;
     }
     const top = ranked[0].t.going.length, mv = mine();
-    list.innerHTML = ranked.map(({ a, t }, i) => {
+    const cardOf = ({ a, t }, i) => {
       const lead = top > 0 && t.going.length === top;
       const imIn = !!mv.going?.[a.id];
       const opts = Object.entries(a.options || {}).sort((x, y) => (x[1].at || 0) - (y[1].at || 0));
@@ -585,7 +609,37 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
           </div>
         </div>
       </article>`;
+    };
+
+    // ---- weekend at a glance: a column per day with tiles in time order; the chosen activity opens underneath
+    const dayKey = a => (a.when || "").slice(0, 10);
+    const days = [...new Set(["2026-10-30", "2026-10-31", "2026-11-01", ...S.acts.map(dayKey).filter(Boolean)])].sort();
+    if (!S.sel || !S.acts.some(x => x.id === S.sel)) S.sel = ranked[0].a.id;
+    const selDay = dayKey(S.acts.find(x => x.id === S.sel));
+    const posterOf = a => {
+      if (a.imageId) return a.imageId;
+      const t = tally(a);
+      const best = Object.entries(a.options || {}).filter(([, o]) => o.imageId).sort((x, y) => (t.cnt[y[0]] || 0) - (t.cnt[x[0]] || 0))[0];
+      return best ? best[1].imageId : "";
+    };
+    const tile = a => {
+      const n = tally(a).going.length, img = posterOf(a), tm = (a.when || "").split("T")[1];
+      return `<button class="gtile${a.id === S.sel ? " sel" : ""}${mv.going?.[a.id] ? " in" : ""}" type="button" data-act="sel" data-sel="${esc(a.id)}" aria-pressed="${a.id === S.sel}">
+        ${img ? `<img src="/api/images/${esc(img)}" alt="" loading="lazy">` : `<span class="gph" aria-hidden="true"><svg viewBox="0 0 120 100" width="40" height="34"><use href="#pumpkin"/></svg></span>`}
+        <span class="gtx"><small>${tm ? esc(time12(tm)) + " · " : ""}${n} in</small><b>${esc(a.title)}</b></span></button>`;
+    };
+    const byTime = (x, y) => (x.when || "").localeCompare(y.when || "");
+    const cols = days.map(d => {
+      const [y, m, dd] = d.split("-").map(Number), dt = new Date(y, m - 1, dd);
+      const items = S.acts.filter(a => dayKey(a) === d).sort(byTime);
+      return `<div class="gcol"><div class="ghead${d === selDay ? " on" : ""}${d === "2026-10-31" ? " hw" : ""}"><small>${DAYS[dt.getDay()].toUpperCase()}</small><b>${dd}</b></div>
+        ${items.map(tile).join("")}<button class="gadd" type="button" data-act="addon" data-day="${d}" aria-label="Add something on ${esc(fmtWhen(d))}">+ Add</button></div>`;
     }).join("");
+    const undated = S.acts.filter(a => !dayKey(a));
+    const selIdx = ranked.findIndex(r => r.a.id === S.sel);
+    list.innerHTML = `<div class="glance${days.length > 3 ? " many" : ""}">${cols}</div>
+      ${undated.length ? `<div class="nodate"><span class="opts-h">No date yet</span>${undated.map(a => `<button class="ndrow${a.id === S.sel ? " sel" : ""}" type="button" data-act="sel" data-sel="${esc(a.id)}"><b>${esc(a.title)}</b><span>${tally(a).going.length} in</span></button>`).join("")}</div>` : ""}
+      ${cardOf(ranked[selIdx], selIdx)}`;
   }
 
   // ---- name
@@ -623,6 +677,8 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
   $("#list").addEventListener("click", e => {
     const b = e.target.closest("[data-act]"); if (!b || b.tagName === "FORM") return;
     const aid = b.closest(".card")?.dataset.id, act = b.dataset.act;
+    if (act === "sel") { S.sel = b.dataset.sel; store.set("hw.sel", S.sel); render(); document.querySelector("#list .card")?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    if (act === "addon") { const d = b.dataset.day; needName(() => { $("#addBtn").onclick(); setNewWhen(d); }); return; }
     if (act === "view" || act === "oview") { const img = b.querySelector("img"); $("#viewerImg").src = img.src; $("#viewerImg").alt = img.alt; $("#viewer").hidden = false; }
     else if (act === "addopt") needName(() => openOptSheet(aid));
     else if (act === "odel") { S.confirmOpt = b.dataset.opt; render(); }
@@ -748,9 +804,10 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
       const [imageId, options] = await Promise.all([actPic.imageId(), Promise.all(rows.map(async r => ({
         label: r.querySelector(".o-l").value.trim(), price: r.querySelector(".o-p").value.trim(), url: r.querySelector(".o-u").value.trim(),
         imageId: await r._pic.imageId().catch(() => "") })))]);
-      await api("activities", { method: "POST", body: { title, when: S.newWhen || "", url: $("#f-url").value.trim(), desc: $("#f-desc").value.trim(), imageId, options, name: S.name } });
+      const made = await api("activities", { method: "POST", body: { title, when: S.newWhen || "", url: $("#f-url").value.trim(), desc: $("#f-desc").value.trim(), imageId, options, name: S.name } });
+      if (made?.id) { S.sel = made.id; store.set("hw.sel", made.id); }
       closeSheet("#sheetBg"); toast("Added to the vote 🎃"); await load();
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      document.querySelector("#list .card")?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (ex) { err.textContent = ex.message; err.hidden = false; }
     finally { save.disabled = false; save.textContent = "Add to the vote"; }
   });
