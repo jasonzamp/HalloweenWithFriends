@@ -32,7 +32,7 @@ function wrap(fn) {
 // One-off: copy the test copy's activities onto the real page. Protected by a token only the deployer holds
 // (just its SHA-256 is here); removed again after use.
 const PROMOTE_HASH = "c677fc4cb8fdea55322a46723300e00022e22e23f7788efdfed40aa4c920e2c7";
-app.http("promote", { methods: ["POST"], route: "admin/promote", authLevel: "anonymous",
+app.http("promote", { methods: ["POST"], route: "promote-test-data", authLevel: "anonymous",
   handler: wrap(async req => {
     const tok = req.headers.get("x-promote-token") || "";
     if (require("crypto").createHash("sha256").update(tok).digest("hex") !== PROMOTE_HASH) return { status: 404, body: { error: "Not found" } };
