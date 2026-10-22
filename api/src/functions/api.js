@@ -29,20 +29,6 @@ function wrap(fn) {
   };
 }
 
-// One-off: owner-requested date fix on the real page. Protected by a token only the deployer holds; removed after use.
-const FIX_HASH = "71cc79760f496f6da3b3eb7dd4d586795c5d1699a60df0d4c822a0b0345547b9";
-app.http("fixWhen", { methods: ["POST"], route: "fix-when", authLevel: "anonymous",
-  handler: wrap(async req => {
-    const tok = req.headers.get("x-fix-token") || "";
-    if (require("crypto").createHash("sha256").update(tok).digest("hex") !== FIX_HASH) return { status: 404, body: { error: "Not found" } };
-    const b = await jsonBody(req);
-    const store = makeStore(process.env.STORAGE_CONNECTION_STRING);
-    const act = await store.getActivity(String(b.id || ""));
-    if (!act || !/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(b.when || "")) return { status: 400, body: { error: "bad request" } };
-    act.when = b.when; await store.replaceActivity(act, act.etag);
-    return { status: 200, body: { title: act.title, when: act.when } };
-  }) });
-
 app.http("state", { methods: ["GET"], route: "state", authLevel: "anonymous", handler: wrap(req => h(req).state()) });
 
 app.http("createActivity", { methods: ["POST"], route: "activities", authLevel: "anonymous",
