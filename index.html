@@ -195,6 +195,22 @@ button.whenchip{cursor:pointer}
 .gtile .gph{display:grid;place-items:center;background:var(--surface-2)}
 .gtile.in{border-color:var(--pumpkin)}
 .gtile.sel{border:2px solid var(--candle);box-shadow:0 0 0 3px rgba(255,211,138,.25)}
+.gtile{position:relative}
+.gin{position:absolute;top:6px;left:6px;background:rgba(23,17,28,.9);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+.gin.has{background:var(--pumpkin);border-color:var(--pumpkin);color:var(--pumpkin-ink)}
+.gtx em{font-style:normal;color:var(--muted);font-size:11px;line-height:1.25;overflow-wrap:anywhere}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px}
+.seg button{min-height:40px;border:0;border-radius:9px;background:none;color:var(--fg);font:inherit;font-weight:700;cursor:pointer}
+.seg button.on{background:var(--pumpkin);color:var(--pumpkin-ink)}
+.pp{display:grid;gap:10px}
+.ppi{display:grid;gap:6px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2)}
+.ppi h4{margin:0;font-size:16px;font-weight:800;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.ppi h4 small{color:var(--candle);font-size:12px;font-weight:700;white-space:nowrap}
+.ppi .who2{color:var(--muted);font-size:13px}
+.ppo{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:14px;padding-top:6px;border-top:1px solid var(--line)}
+.ppo b{font-variant-numeric:tabular-nums;text-align:right}
+.ppo span.n{grid-column:1/-1;color:var(--muted);font-size:12px}
+.pp .none{color:var(--muted);font-size:14px;margin:0}
 .gtx{display:grid;gap:1px;padding:6px 8px 8px;min-width:0}
 .gtx small{color:var(--candle);font-size:11px;font-weight:800}
 .gtx b{font-size:13px;font-weight:800;line-height:1.2;overflow-wrap:anywhere}
@@ -393,6 +409,17 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
   </form>
 </div>
 
+<!-- who's in -->
+<div class="sheet-bg" id="peopleBg" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="pplTitle">
+    <div class="grip"></div>
+    <h3 id="pplTitle">Who's in</h3>
+    <div class="seg" role="tablist"><button type="button" role="tab" data-v="act" class="on" aria-selected="true">By activity</button><button type="button" role="tab" data-v="person" aria-selected="false">By person</button></div>
+    <div class="pp" id="pplBody"></div>
+    <button type="button" class="btn ghost" id="pplClose">Close</button>
+  </div>
+</div>
+
 <!-- calendar -->
 <div class="sheet-bg" id="calBg" hidden>
   <div class="sheet" role="dialog" aria-labelledby="calTitle">
@@ -558,7 +585,8 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
   function render() {
     const voters = Object.values(S.votes).filter(v => Object.keys(v.going || {}).length || Object.keys(v.picks || {}).length).length;
     $("#strip").innerHTML = (S.name ? `<button class="chip me" id="meChip" type="button">👤 <b>${esc(S.name)}</b> · change</button>` : "") +
-      (S.loaded ? `<span class="chip"><b>${S.acts.length}</b> ${S.acts.length === 1 ? "idea" : "ideas"}</span><span class="chip"><b>${voters}</b> voted</span>` : "");
+      (S.loaded ? `<span class="chip"><b>${S.acts.length}</b> ${S.acts.length === 1 ? "idea" : "ideas"}</span><button class="chip me" id="votedChip" type="button">👥 <b>${voters}</b> voted · see who</button>` : "");
+    if (!$("#peopleBg").hidden) renderPeople();
 
     const list = $("#list");
     if (!S.loaded) { if (S.failed) list.innerHTML = `<div class="empty"><h2>Hmm, no signal</h2><p>We couldn't load the plans. Pull down to refresh or check your connection.</p></div>`; return; }
@@ -628,11 +656,17 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
       const best = Object.entries(a.options || {}).filter(([, o]) => o.imageId).sort((x, y) => (t.cnt[y[0]] || 0) - (t.cnt[x[0]] || 0))[0];
       return best ? best[1].imageId : "";
     };
+    const leadOpt = a => {
+      const t = tally(a); let best = null;
+      for (const [oid, o] of Object.entries(a.options || {})) { const c = t.cnt[oid] || 0; if (c && (!best || c > best.n)) best = { label: o.label, n: c }; }
+      return best;
+    };
     const tile = a => {
-      const n = tally(a).going.length, img = posterOf(a), tm = (a.when || "").split("T")[1];
+      const n = tally(a).going.length, img = posterOf(a), tm = (a.when || "").split("T")[1], lo = leadOpt(a);
       return `<button class="gtile${a.id === S.sel ? " sel" : ""}${mv.going?.[a.id] ? " in" : ""}" type="button" data-act="sel" data-sel="${esc(a.id)}" aria-pressed="${a.id === S.sel}">
         ${img ? `<img src="/api/images/${esc(img)}" alt="" loading="lazy">` : `<span class="gph" aria-hidden="true"><svg viewBox="0 0 120 100" width="40" height="34"><use href="#pumpkin"/></svg></span>`}
-        <span class="gtx"><small>${tm ? esc(time12(tm)) + " · " : ""}${n} in</small><b>${esc(a.title)}</b></span></button>`;
+        <span class="gin${n ? " has" : ""}">${n} in</span>
+        <span class="gtx"><small>${tm ? esc(time12(tm)) : "Any time"}</small><b>${esc(a.title)}</b>${lo ? `<em>${esc(lo.label)} · ${lo.n} ${lo.n === 1 ? "vote" : "votes"}</em>` : ""}</span></button>`;
     };
     const byTime = (x, y) => (x.when || "").localeCompare(y.when || "");
     const cols = days.map(d => {
@@ -711,7 +745,7 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
   $("#viewer").addEventListener("click", () => { $("#viewer").hidden = true; $("#viewerImg").removeAttribute("src"); });
 
   // ---- sheets
-  const SHEETS = ["#sheetBg", "#nameBg", "#optBg", "#calBg"];
+  const SHEETS = ["#sheetBg", "#nameBg", "#optBg", "#calBg", "#peopleBg"];
   function openSheet(sel) { $(sel).hidden = false; document.body.style.overflow = "hidden"; }
   function closeSheet(sel) { $(sel).hidden = true; if (SHEETS.every(x => $(x).hidden)) document.body.style.overflow = ""; }
   SHEETS.forEach(sel => $(sel).addEventListener("click", e => { if (e.target === $(sel)) closeSheet(sel); }));
@@ -818,6 +852,40 @@ label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
     } catch (ex) { err.textContent = ex.message; err.hidden = false; }
     finally { save.disabled = false; save.textContent = "Add to the vote"; }
   });
+
+  // ---- who's in (everyone's votes)
+  let pplView = "act";
+  function renderPeople() {
+    const acts = [...S.acts].sort((x, y) => (x.when || "9999").localeCompare(y.when || "9999"));
+    let h = "";
+    if (pplView === "act") {
+      h = acts.map(a => {
+        const t = tally(a);
+        const opts = Object.entries(a.options || {}).sort((x, y) => (t.cnt[y[0]] || 0) - (t.cnt[x[0]] || 0));
+        return `<div class="ppi"><h4>${esc(a.title)}<small>${a.when ? esc(fmtWhen(a.when)) : "No date"}</small></h4>
+          <div class="who2"><b>${t.going.length} in</b>${t.going.length ? " · " + esc(t.going.map(nameOf).join(", ")) : ""}</div>
+          ${opts.length ? `<div class="ppo">${opts.map(([oid, o]) => `<span>${esc(o.label)}</span><b>${t.cnt[oid] || 0}</b>${(t.who[oid] || []).length ? `<span class="n">${esc(t.who[oid].map(nameOf).join(", "))}</span>` : ""}`).join("")}</div>` : ""}</div>`;
+      }).join("") || `<p class="none">No activities yet.</p>`;
+    } else {
+      const people = Object.entries(S.votes).map(([id, v]) => ({ id, v, n: Object.keys(v.going || {}).filter(k => S.acts.some(a => a.id === k)).length }))
+        .filter(p => p.n || Object.keys(p.v.picks || {}).length).sort((x, y) => y.n - x.n || nameOf(x.id).localeCompare(nameOf(y.id)));
+      h = people.map(({ id, v, n }) => {
+        const lines = acts.filter(a => v.going?.[a.id] || v.picks?.[a.id]).map(a => {
+          const pk = v.picks?.[a.id] && a.options?.[v.picks[a.id]];
+          return `<span>${esc(a.title)}${a.when ? ` <span class="n" style="display:inline">· ${esc(fmtWhen(a.when))}</span>` : ""}</span><b>${pk ? esc(pk.label) : "✓"}</b>`;
+        }).join("");
+        return `<div class="ppi"><h4>${esc(id === voterId ? (S.name || "You") + " (you)" : nameOf(id))}<small>in for ${n}</small></h4>${lines ? `<div class="ppo">${lines}</div>` : ""}</div>`;
+      }).join("") || `<p class="none">Nobody has voted yet.</p>`;
+    }
+    $("#pplBody").innerHTML = h;
+  }
+  document.addEventListener("click", e => { if (e.target.closest("#votedChip")) { renderPeople(); openSheet("#peopleBg"); } });
+  document.querySelector("#peopleBg .seg").onclick = e => {
+    const b = e.target.closest("[data-v]"); if (!b) return; pplView = b.dataset.v;
+    document.querySelectorAll("#peopleBg .seg button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-selected", x === b); });
+    renderPeople();
+  };
+  $("#pplClose").onclick = () => closeSheet("#peopleBg");
 
   // ---- date & time
   const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
